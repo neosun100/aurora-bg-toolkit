@@ -63,11 +63,11 @@ def parse_stats(path: Path):
     return indexed, "indexed"
 
 
-def gaps(samples, key_idx, label, mode):
+def gaps(samples, key_idx, label, mode, period_ms=1000):
     """Find runs of samples where sample[key_idx] == 0; return list of windows.
 
     In timestamped mode, durations are computed from actual timestamps.
-    In indexed mode, each sample = 1 second (the reporter is 1Hz)."""
+    In indexed mode, each sample = period_ms (typically 1000 for 1Hz, 100 for 10Hz)."""
     out = []
     streak_start_key = None
     last_key = None
@@ -85,7 +85,7 @@ def gaps(samples, key_idx, label, mode):
                     start_iso = streak_start_key.isoformat(timespec="milliseconds")
                     end_iso = last_key.isoformat(timespec="milliseconds")
                 else:
-                    duration_ms = (last_key - streak_start_key + 1) * 1000
+                    duration_ms = (last_key - streak_start_key + 1) * period_ms
                     start_iso = f"sample#{streak_start_key}"
                     end_iso = f"sample#{last_key}"
                 # Filter trivial 0-duration single-point gaps for the timestamped case
@@ -103,10 +103,25 @@ def gaps(samples, key_idx, label, mode):
         if mode == "timestamped":
             duration_ms = int((last_key - streak_start_key).total_seconds() * 1000)
         else:
-            duration_ms = (last_key - streak_start_key + 1) * 1000
+            duration_ms = (last_key - streak_start_key + 1) * period_ms
         if duration_ms > 0:
             out.append({"kind": label, "start": str(streak_start_key), "end": str(last_key), "durationMs": duration_ms})
     return out
+
+
+def detect_period_ms(samples_timestamped):
+    """Auto-detect the STATS reporter period from inter-sample gaps.
+
+    Returns None if not enough samples or timing irregular."""
+    if len(samples_timestamped) < 5:
+        return None
+    deltas = []
+    for i in range(1, len(samples_timestamped)):
+        d_ms = (samples_timestamped[i][0] - samples_timestamped[i-1][0]).total_seconds() * 1000
+        deltas.append(d_ms)
+    deltas.sort()
+    median = deltas[len(deltas) // 2]
+    return int(round(median))
 
 
 def main():
@@ -119,12 +134,21 @@ def main():
         print(json.dumps({"error": "no STATS lines found", "log": str(args.log)}))
         return 1
 
-    write_gaps = gaps(samples, 1, "WRITE_GAP", mode)
-    read_gaps = gaps(samples, 2, "READ_GAP", mode)
+    # Auto-detect the reporter period: if timestamped, infer from samples;
+    # if indexed (no timestamps), default to 1000ms (1Hz, the legacy default).
+    period_ms = 1000
+    if mode == "timestamped":
+        detected = detect_period_ms(samples)
+        if detected and 50 <= detected <= 2000:
+            period_ms = detected
+
+    write_gaps = gaps(samples, 1, "WRITE_GAP", mode, period_ms=period_ms)
+    read_gaps = gaps(samples, 2, "READ_GAP", mode, period_ms=period_ms)
     out = {
-        "schema": 2,
+        "schema": 3,
         "log": str(args.log),
         "parseMode": mode,
+        "detectedPeriodMs": period_ms,
         "statsCount": len(samples),
         "writeGaps": write_gaps,
         "readGaps": read_gaps,

@@ -1,0 +1,69 @@
+# V9-TUNED — Combined hypothesis test for production-load optimisation.
+#
+# Tests 5 untested levers in a single config (vs v4-current control):
+#   H1: JVM DNS TTL=5s (set at startup, not in YAML)
+#   H2: connectionInitSql=null + connectionTestQuery=null
+#   H3: bgConnectTimeoutMs=5000 (vs 30000 default)
+#   H4: wrapper 4.0.1 (set via -Pwrapper-4.1 profile or by URL)
+#   H5: maxLifetime=300000 (vs 60000)
+#
+# Plus ergonomic improvement:
+#   - STATS reporter at 10 Hz (vs 1 Hz) — better measurement precision
+#     (configured at workload section)
+#
+# Same as v4 (the control config):
+#   - workload: 64 threads × 50ms × R:I:U=9:2:1 ≈ 1280 ops/s
+#   - Hikari maximumPoolSize=50, minimumIdle=50
+#   - JDBC plugins [failover2, efm2, bg]
+#   - connectTimeout=1000ms, socketTimeout=3000ms
+#   - failureDetection params (6000/1000/3)
+#   - bgHighMs=50
+#   - app-layer retry enabled, delayMs=25
+name: v9-tuned
+description: V4 + 5 untested optimisations (DNS TTL, no test queries, bgConnectTimeout, longer lifetime, 10Hz STATS).
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+jdbc:
+  wrapperPlugins:
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 50
+  bgIncreasedMs: 500             # H3 — was 1000 default
+  bgConnectTimeoutMs: 5000        # H3 — was 30000 default
+  connectTimeout: 1000
+  socketTimeout: 3000
+  failureDetectionTime: 6000
+  failureDetectionInterval: 1000
+  failureDetectionCount: 3
+  wrapperLoggerLevel: INFO
+
+hikari:
+  maximumPoolSize: 50
+  minimumIdle: 50
+  initializationFailTimeout: -1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 300000           # H5 — was 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: null         # H2 — was "select 1 from dual"
+  connectionTestQuery: null       # H2 — was "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 64
+  intervalMs: 50
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: true
+    delayMs: 25
+  statsReporterHz: 10             # NEW — emit STATS every 100ms (10Hz) for better precision

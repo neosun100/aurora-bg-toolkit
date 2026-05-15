@@ -65,10 +65,11 @@ public final class MixedWorkload {
             workers.submit(this::runLoop);
         }
         startReporter();
-        LOG.info("Workload started: {} threads, intervalMs={}, R:I:U={}:{}:{}, retry={}",
+        LOG.info("Workload started: {} threads, intervalMs={}, R:I:U={}:{}:{}, retry={}, reporter={}Hz",
                 wl.threads(), wl.intervalMs(),
                 wl.readWeight(), wl.insertWeight(), wl.updateWeight(),
-                wl.retryEnabled() ? "on/" + wl.retryDelayMs() + "ms" : "off");
+                wl.retryEnabled() ? "on/" + wl.retryDelayMs() + "ms" : "off",
+                wl.statsReporterHz());
     }
 
     public void stop() {
@@ -203,6 +204,7 @@ public final class MixedWorkload {
             t.setDaemon(true);
             return t;
         });
+        long periodMs = config.workload().statsReporterPeriodMs();
         reporter.scheduleAtFixedRate(() -> {
             Stats.Snapshot s = stats.drainPerSecond();
             if (s.hasFailures()) {
@@ -212,7 +214,7 @@ public final class MixedWorkload {
             } else {
                 LOG.info("STATS write_ok={} read_ok={}", s.writeOk(), s.readOk());
             }
-        }, 1, 1, TimeUnit.SECONDS);
+        }, periodMs, periodMs, TimeUnit.MILLISECONDS);
     }
 
     /** Convenience: bootstrap the test table if it doesn't exist yet. */

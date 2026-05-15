@@ -51,6 +51,16 @@ public final class BgDowntimeTest {
         System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", "yyyy-MM-dd HH:mm:ss.SSS");
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
 
+        // Reduce JVM DNS cache TTL so that BG/Failover IP changes take effect within seconds,
+        // not the JVM default of 30s. Override via -Dnetworkaddress.cache.ttl on the command line
+        // if you want a different value. This default is recommended by AWS for RDS clients.
+        if (java.security.Security.getProperty("networkaddress.cache.ttl") == null) {
+            java.security.Security.setProperty("networkaddress.cache.ttl", "5");
+        }
+        if (java.security.Security.getProperty("networkaddress.cache.negative.ttl") == null) {
+            java.security.Security.setProperty("networkaddress.cache.negative.ttl", "2");
+        }
+
         if (args.length < 1) {
             System.err.println("Usage: BgDowntimeTest <config-yaml-path>");
             System.exit(1);
@@ -72,6 +82,9 @@ public final class BgDowntimeTest {
                 endpoint, config.database().port(), config.database().database());
         LOG.info("table={} wrapperVersion={}", tableName, wrapperVersion);
         LOG.info("java.version={}", System.getProperty("java.version"));
+        LOG.info("dns.cache.ttl={} dns.cache.negative.ttl={}",
+                java.security.Security.getProperty("networkaddress.cache.ttl"),
+                java.security.Security.getProperty("networkaddress.cache.negative.ttl"));
         DnsUtil.logResolve(endpoint);
 
         String jdbcUrl = JdbcUrlBuilder.build(

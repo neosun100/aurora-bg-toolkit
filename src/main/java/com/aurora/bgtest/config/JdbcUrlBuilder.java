@@ -70,6 +70,12 @@ public final class JdbcUrlBuilder {
         if (jdbc.bgHighMs() != null) {
             params.add("bgHighMs=" + jdbc.bgHighMs());
         }
+        if (jdbc.bgIncreasedMs() != null) {
+            params.add("bgIncreasedMs=" + jdbc.bgIncreasedMs());
+        }
+        if (jdbc.bgConnectTimeoutMs() != null) {
+            params.add("bgConnectTimeoutMs=" + jdbc.bgConnectTimeoutMs());
+        }
         if (jdbc.wrapperLoggerLevel() != null) {
             params.add("wrapperLoggerLevel=" + jdbc.wrapperLoggerLevel());
         }

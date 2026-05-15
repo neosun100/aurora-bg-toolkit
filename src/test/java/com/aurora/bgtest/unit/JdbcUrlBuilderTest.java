@@ -96,4 +96,32 @@ class JdbcUrlBuilderTest {
         String url2 = JdbcUrlBuilder.build(EP, 4488, "demo", jdbc, null);
         assertThat(url1).isEqualTo(url2);
     }
+
+    @Test
+    void v9ExtendedBgParamsEmitted() {
+        TestConfig.Jdbc jdbc = new TestConfig.Jdbc(
+                List.of("failover2", "efm2", "bg"),
+                /* bgHighMs */ 50,
+                /* bgIncreasedMs */ 500,
+                /* bgConnectTimeoutMs */ 5000,
+                1000, 3000, 6000, 1000, 3, "INFO");
+        String url = JdbcUrlBuilder.build(EP, 4488, "demo", jdbc, null);
+        assertThat(url)
+                .contains("bgHighMs=50")
+                .contains("bgIncreasedMs=500")
+                .contains("bgConnectTimeoutMs=5000");
+    }
+
+    @Test
+    void v9ExtendedBgParamsOmittedWhenNull() {
+        // Backwards-compat constructor leaves bgIncreasedMs/bgConnectTimeoutMs null
+        TestConfig.Jdbc jdbc = new TestConfig.Jdbc(
+                List.of("failover2", "efm2", "bg"),
+                50, 1000, 3000, 6000, 1000, 3, "INFO");
+        String url = JdbcUrlBuilder.build(EP, 4488, "demo", jdbc, null);
+        assertThat(url)
+                .contains("bgHighMs=50")
+                .doesNotContain("bgIncreasedMs=")
+                .doesNotContain("bgConnectTimeoutMs=");
+    }
 }

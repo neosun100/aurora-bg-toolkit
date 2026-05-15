@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v9-experiment] - 2026-05-16 (in progress)
+
+### Added
+- `configs/v9-tuned.yaml` — combined optimization config testing 5 hypotheses:
+  H1 JVM DNS TTL=5s, H2 remove connectionInitSql/TestQuery, H3
+  bgConnectTimeoutMs=5000, H4 wrapper 4.0.1, H5 maxLifetime=300000ms
+- `docs/EXPERIMENT-V9-PLAN.md` — pre-registered experiment design with
+  hypotheses, time budget, success criteria
+- `infra/orchestrate-{bg,failover,reboot}-v9.sh` — orchestrators for
+  10-round runs across 4 cells (v4@4.0.0, v4@4.0.1, v9@4.0.0, v9@4.0.1)
+- 10 Hz STATS reporter (was 1 Hz) — better downtime measurement precision
+- `analyze-stats-gap.py` upgraded to handle 100ms granularity
+
+### Fixed
+- (TBD) … will add bug fixes discovered during v9 execution
+
+### Changed
+- BgDowntimeTest now sets `-Dnetworkaddress.cache.ttl=5` at startup so
+  every test gets the same DNS-aware behaviour as the explicit JVM flag
+
+### Background
+v9 explores whether v4-current (the existing production recommendation) can
+be improved on under the production-grade workload (1280 ops/s, pool=50)
+discovered in v2. Five untested optimization levers + wrapper version
+A/B = 120 measurements across 30 rounds.
+
 ## [Unreleased]
 
 ### Added

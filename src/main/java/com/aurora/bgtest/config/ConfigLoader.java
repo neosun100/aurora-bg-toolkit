@@ -64,6 +64,8 @@ public final class ConfigLoader {
         TestConfig.Jdbc jdbc = new TestConfig.Jdbc(
                 wrapperPlugins,
                 optionalInt(jdbcMap, "bgHighMs"),
+                optionalInt(jdbcMap, "bgIncreasedMs"),
+                optionalInt(jdbcMap, "bgConnectTimeoutMs"),
                 optionalInt(jdbcMap, "connectTimeout"),
                 optionalInt(jdbcMap, "socketTimeout"),
                 optionalInt(jdbcMap, "failureDetectionTime"),
@@ -95,7 +97,8 @@ public final class ConfigLoader {
                 requireInt(weights, "insert", source),
                 requireInt(weights, "update", source),
                 Boolean.TRUE.equals(retry.get("enabled")),
-                ((Number) retry.getOrDefault("delayMs", 0)).intValue());
+                ((Number) retry.getOrDefault("delayMs", 0)).intValue(),
+                ((Number) wlMap.getOrDefault("statsReporterHz", 1)).intValue());
 
         Map<String, Object> dnsMap = (Map<String, Object>) map.getOrDefault("dnsWarmup", Map.of());
         TestConfig.DnsWarmup dns = new TestConfig.DnsWarmup(

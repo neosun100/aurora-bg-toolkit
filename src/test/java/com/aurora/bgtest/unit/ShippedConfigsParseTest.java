@@ -86,4 +86,20 @@ class ShippedConfigsParseTest {
         assertThat(c.dnsWarmup().intervalMs()).isEqualTo(1000);
         assertThat(c.jdbc().connectTimeout()).isEqualTo(500);
     }
+
+    @Test
+    void v9TunedParses() throws Exception {
+        TestConfig c = ConfigLoader.fromPath(CONFIGS.resolve("v9-tuned.yaml"));
+        // H2: no init/test queries
+        assertThat(c.hikari().connectionInitSql()).isNull();
+        assertThat(c.hikari().connectionTestQuery()).isNull();
+        // H3: bg-extended fields
+        assertThat(c.jdbc().bgConnectTimeoutMs()).isEqualTo(5000);
+        assertThat(c.jdbc().bgIncreasedMs()).isEqualTo(500);
+        // H5: longer maxLifetime
+        assertThat(c.hikari().maxLifetimeMs()).isEqualTo(300000);
+        // 10Hz STATS reporter
+        assertThat(c.workload().statsReporterHz()).isEqualTo(10);
+        assertThat(c.workload().statsReporterPeriodMs()).isEqualTo(100L);
+    }
 }

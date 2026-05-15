@@ -74,6 +74,8 @@ public final class TestConfig {
     public static final class Jdbc {
         private final List<String> wrapperPlugins;
         private final Integer bgHighMs;
+        private final Integer bgIncreasedMs;
+        private final Integer bgConnectTimeoutMs;
         private final Integer connectTimeout;
         private final Integer socketTimeout;
         private final Integer failureDetectionTime;
@@ -83,11 +85,15 @@ public final class TestConfig {
 
         public Jdbc(List<String> wrapperPlugins,
                     Integer bgHighMs,
+                    Integer bgIncreasedMs,
+                    Integer bgConnectTimeoutMs,
                     Integer connectTimeout, Integer socketTimeout,
                     Integer failureDetectionTime, Integer failureDetectionInterval, Integer failureDetectionCount,
                     String wrapperLoggerLevel) {
             this.wrapperPlugins = wrapperPlugins == null ? List.of() : List.copyOf(wrapperPlugins);
             this.bgHighMs = bgHighMs;
+            this.bgIncreasedMs = bgIncreasedMs;
+            this.bgConnectTimeoutMs = bgConnectTimeoutMs;
             this.connectTimeout = connectTimeout;
             this.socketTimeout = socketTimeout;
             this.failureDetectionTime = failureDetectionTime;
@@ -95,8 +101,23 @@ public final class TestConfig {
             this.failureDetectionCount = failureDetectionCount;
             this.wrapperLoggerLevel = wrapperLoggerLevel;
         }
+
+        /** Backwards-compatible 8-arg constructor (no bg-extended fields). */
+        public Jdbc(List<String> wrapperPlugins,
+                    Integer bgHighMs,
+                    Integer connectTimeout, Integer socketTimeout,
+                    Integer failureDetectionTime, Integer failureDetectionInterval, Integer failureDetectionCount,
+                    String wrapperLoggerLevel) {
+            this(wrapperPlugins, bgHighMs, null, null,
+                    connectTimeout, socketTimeout,
+                    failureDetectionTime, failureDetectionInterval, failureDetectionCount,
+                    wrapperLoggerLevel);
+        }
+
         public List<String> wrapperPlugins() { return wrapperPlugins; }
         public Integer bgHighMs() { return bgHighMs; }
+        public Integer bgIncreasedMs() { return bgIncreasedMs; }
+        public Integer bgConnectTimeoutMs() { return bgConnectTimeoutMs; }
         public Integer connectTimeout() { return connectTimeout; }
         public Integer socketTimeout() { return socketTimeout; }
         public Integer failureDetectionTime() { return failureDetectionTime; }
@@ -156,13 +177,18 @@ public final class TestConfig {
         private final int updateWeight;
         private final boolean retryEnabled;
         private final int retryDelayMs;
+        private final int statsReporterHz;
 
         public Workload(int threads, int intervalMs,
                         int readWeight, int insertWeight, int updateWeight,
-                        boolean retryEnabled, int retryDelayMs) {
+                        boolean retryEnabled, int retryDelayMs,
+                        int statsReporterHz) {
             if (threads < 1) throw new IllegalArgumentException("threads must be >= 1");
             if (readWeight + insertWeight + updateWeight <= 0) {
                 throw new IllegalArgumentException("workload weights must sum to > 0");
+            }
+            if (statsReporterHz < 1 || statsReporterHz > 100) {
+                throw new IllegalArgumentException("statsReporterHz must be in [1, 100]");
             }
             this.threads = threads;
             this.intervalMs = intervalMs;
@@ -171,7 +197,17 @@ public final class TestConfig {
             this.updateWeight = updateWeight;
             this.retryEnabled = retryEnabled;
             this.retryDelayMs = retryDelayMs;
+            this.statsReporterHz = statsReporterHz;
         }
+
+        /** Backwards-compatible 7-arg constructor (1 Hz reporter). */
+        public Workload(int threads, int intervalMs,
+                        int readWeight, int insertWeight, int updateWeight,
+                        boolean retryEnabled, int retryDelayMs) {
+            this(threads, intervalMs, readWeight, insertWeight, updateWeight,
+                    retryEnabled, retryDelayMs, 1);
+        }
+
         public int threads() { return threads; }
         public int intervalMs() { return intervalMs; }
         public int readWeight() { return readWeight; }
@@ -180,6 +216,8 @@ public final class TestConfig {
         public int totalWeight() { return readWeight + insertWeight + updateWeight; }
         public boolean retryEnabled() { return retryEnabled; }
         public int retryDelayMs() { return retryDelayMs; }
+        public int statsReporterHz() { return statsReporterHz; }
+        public long statsReporterPeriodMs() { return 1000L / statsReporterHz; }
     }
 
     /** Optional background DNS warmup. Disabled by default for backwards compatibility. */
