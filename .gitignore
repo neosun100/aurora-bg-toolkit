@@ -9,6 +9,10 @@ mvnw.cmd
 dependency-reduced-pom.xml
 buildNumber.properties
 
+# Python
+__pycache__/
+*.pyc
+
 # IDE
 .idea/
 *.iml
