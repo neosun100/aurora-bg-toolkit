@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aurora BG Toolkit — Downtime Dashboard</title>
+<style>
+  :root {
+    --bg: #000;
+    --panel: #0d0d0f;
+    --panel-2: #14141a;
+    --fg: #f5f5f7;
+    --dim: #86868b;
+    --accent: #2997ff;
+    --green: #30d158;
+    --red: #ff453a;
+    --orange: #ff9f0a;
+    --purple: #bf5af2;
+    --border: #1f1f24;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "DM Sans",
+                 system-ui, sans-serif;
+    font-feature-settings: "ss01", "cv11";
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: clamp(2rem, 5vw, 4rem); }
+
+  header { margin-bottom: 4rem; }
+  h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin: 0 0 0.5rem;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  header p { color: var(--dim); font-size: 1.05rem; margin: 0; }
+
+  .hero {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 3rem;
+  }
+  .hero .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem 1.75rem;
+  }
+  .hero .label { color: var(--dim); font-size: 0.85rem; letter-spacing: 0.04em; text-transform: uppercase; }
+  .hero .num   { font-size: 2.5rem; font-weight: 700; margin-top: 0.4rem; letter-spacing: -0.02em; }
+  .hero .num.green  { color: var(--green); }
+  .hero .num.red    { color: var(--red); }
+  .hero .num.orange { color: var(--orange); }
+  .hero .sub { color: var(--dim); font-size: 0.9rem; margin-top: 0.3rem; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.75rem;
+    margin-bottom: 2rem;
+  }
+  .panel h2 {
+    font-size: 1.4rem;
+    margin: 0 0 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .panel h3 { font-size: 1.05rem; color: var(--dim); font-weight: 500; margin: 1.25rem 0 0.5rem; }
+  .panel p.lead { color: var(--dim); margin: -0.5rem 0 1rem; }
+  canvas { width: 100% !important; height: auto !important; max-height: 420px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  th, td { padding: 0.7rem 0.85rem; text-align: left; border-bottom: 1px solid var(--border); }
+  th { color: var(--dim); font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; font-size: 0.75rem; }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; text-align: right; font-feature-settings: "tnum"; }
+  td.cfg { color: var(--accent); font-weight: 500; }
+
+  .pill {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  .pill.good { background: rgba(48, 209, 88, 0.15); color: var(--green); }
+  .pill.bad  { background: rgba(255, 69, 58, 0.15); color: var(--red); }
+  .pill.warn { background: rgba(255, 159, 10, 0.15); color: var(--orange); }
+
+  .glow {
+    position: absolute;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    filter: blur(150px);
+    opacity: 0.18;
+    pointer-events: none;
+    z-index: -1;
+  }
+  .glow.cyan   { background: var(--accent); top: -100px; right: -100px; }
+  .glow.purple { background: var(--purple); bottom: -200px; left: -150px; }
+
+  .empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--dim);
+  }
+  .empty code {
+    background: var(--panel-2);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    color: var(--fg);
+  }
+
+  footer {
+    margin-top: 4rem;
+    color: var(--dim);
+    font-size: 0.85rem;
+    text-align: center;
+    border-top: 1px solid var(--border);
+    padding-top: 2rem;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 600px) {
+    .hero { grid-template-columns: 1fr 1fr; }
+    .hero .num { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+<div class="glow cyan"></div>
+<div class="glow purple"></div>
+
+<div class="wrap">
+  <header>
+    <h1>Aurora BG Toolkit</h1>
+    <p>Blue/Green switchover, Failover, and Reboot downtime, measured at the application layer.</p>
+  </header>
+
+  <div id="empty" class="panel empty" style="display:none">
+    <h2>No data loaded yet</h2>
+    <p>Run the toolkit and aggregate the results:</p>
+    <p><code>python3 scripts/compare-runs.py e2e-results/ -o dashboard/data/runs.json</code></p>
+    <p>Then refresh this page.</p>
+  </div>
+
+  <div id="content" style="display:none">
+    <div class="hero" id="hero"></div>
+
+    <div class="panel">
+      <h2>Downtime by configuration</h2>
+      <p class="lead">Maximum write-side downtime per round, grouped by configuration.</p>
+      <canvas id="byConfigChart"></canvas>
+    </div>
+
+    <div class="panel">
+      <h2>Statistics</h2>
+      <p class="lead">Per-configuration aggregate statistics. Lower is better; smaller spread (max − min) means more predictable.</p>
+      <table id="statsTable"><thead><tr>
+        <th>Configuration</th>
+        <th class="num">N</th>
+        <th class="num">Min</th>
+        <th class="num">Median</th>
+        <th class="num">Mean</th>
+        <th class="num">P95</th>
+        <th class="num">Max</th>
+        <th class="num">Stdev</th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="panel">
+      <h2>Platform × Wrapper combo</h2>
+      <p class="lead">EC2 vs EKS, wrapper 3.3.0 vs 4.0.0 — does the platform / wrapper matter?</p>
+      <canvas id="comboChart"></canvas>
+    </div>
+
+    <div class="panel">
+      <h2>Per-run detail</h2>
+      <p class="lead">All runs with their max write/read downtime windows.</p>
+      <table id="runsTable"><thead><tr>
+        <th>Run ID</th>
+        <th>Config</th>
+        <th>Scenario</th>
+        <th class="num">Round</th>
+        <th class="num">↓write max</th>
+        <th class="num">↓read max</th>
+        <th>Verdict</th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="panel">
+      <h2>Why customer-baseline hangs 30+ seconds</h2>
+      <p class="lead">A short anatomy of the original problem.</p>
+      <pre style="overflow:auto;font-size:0.85rem;color:var(--dim);line-height:1.6;background:var(--panel-2);padding:1rem;border-radius:8px">
+T+0      Switchover triggered
+T+10s    PREPARATION (RDS internal)        ← not optimisable
+T+13s    bg plugin SuspendConnectRouting   ← DOWNTIME STARTS
+T+17s    SuspendConnectRouting released    ← race with DNS update
+         ┌── DNS already on Green IP  → instant recovery (~4s total)
+         └── DNS still on stale Blue IP
+              ├── customer baseline (no connectTimeout):
+              │     TCP SYN hangs 30s, kernel retries
+              │     → 35-57s total downtime
+              └── v4 (connectTimeout=1000ms):
+                    1s timeout, retry succeeds
+                    → 5-7s total downtime
+      </pre>
+    </div>
+  </div>
+
+  <footer>
+    Aurora BG Toolkit ·
+    <a href="https://github.com/neosun100/aurora-bg-toolkit">github.com/neosun100/aurora-bg-toolkit</a> ·
+    Generated <span id="genAt">—</span>
+  </footer>
+</div>
+
+<script src="assets/chart.umd.min.js"></script>
+<script src="assets/dashboard.js"></script>
+</body>
+</html>

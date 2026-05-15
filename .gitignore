@@ -51,6 +51,10 @@ dashboard/data/runs.json
 docs/REPORTS/*-generated.md
 e2e-results/
 
+# Playwright debug screenshots
+.playwright-mcp/
+*-validation.png
+
 # OS / editor
 *~
 *.swp
