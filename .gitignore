@@ -1,0 +1,55 @@
+# Java / Maven
+target/
+*.class
+*.jar
+!aws-advanced-jdbc-wrapper-*.jar
+.mvn/
+mvnw
+mvnw.cmd
+dependency-reduced-pom.xml
+buildNumber.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+*.pid
+
+# Test output
+test-output/
+.coverage
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# Local configuration
+.env
+.env.local
+*.local.yaml
+
+# AWS (never commit credentials)
+.aws/
+credentials
+*.pem
+*.key
+
+# Generated reports / data
+dashboard/data/runs.json
+docs/REPORTS/*-generated.md
+e2e-results/
+
+# OS / editor
+*~
+*.swp
+*.swo
