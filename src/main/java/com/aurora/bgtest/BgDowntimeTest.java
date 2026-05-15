@@ -46,6 +46,11 @@ public final class BgDowntimeTest {
     private BgDowntimeTest() {}
 
     public static void main(String[] args) throws Exception {
+        // Enable timestamped log lines so analyze-logs.py / LogParser can correlate events.
+        System.setProperty("org.slf4j.simpleLogger.showDateTime", "true");
+        System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", "yyyy-MM-dd HH:mm:ss.SSS");
+        System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
+
         if (args.length < 1) {
             System.err.println("Usage: BgDowntimeTest <config-yaml-path>");
             System.exit(1);
@@ -58,8 +63,8 @@ public final class BgDowntimeTest {
         String wrapperVersion = optionalEnv("WRAPPER_VERSION", "unknown");
 
         String tableName = config.database().tableTemplate()
-                .replace("${CONFIG}", config.name())
-                .replace("${SUFFIX}", tableSuffix);
+                .replace("${CONFIG}", config.name().replace('-', '_'))
+                .replace("${SUFFIX}", tableSuffix.replace('-', '_'));
 
         LOG.info("=== Aurora BG Toolkit ==================================");
         LOG.info("config={} ({})", config.name(), config.description());
