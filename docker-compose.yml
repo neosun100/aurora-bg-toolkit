@@ -1,0 +1,45 @@
+# docker-compose for local end-to-end smoke test:
+#   - Starts a MySQL 8 container
+#   - Builds and runs the toolkit pointed at it (with v4-current config,
+#     except connectTimeout etc. which need real Aurora to matter)
+#
+# This is NOT how you'd run real downtime tests against Aurora — real Aurora
+# E2E uses scripts/run-test.sh against a Cluster Endpoint. Use this compose
+# file when iterating on the workload code locally.
+#
+# Bring up:
+#   docker compose up --build
+#
+# Tear down:
+#   docker compose down -v
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: demo
+    ports:
+      - "13306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-prootpass"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  toolkit:
+    build:
+      context: .
+    environment:
+      DB_ENDPOINT: mysql
+      DB_PORT: "3306"
+      DB_NAME: demo
+      DB_USER: root
+      DB_PASSWORD: rootpass
+      TABLE_SUFFIX: smoke
+      WRAPPER_VERSION: "4.0.0"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command:
+      - /app/configs/v4-current.yaml
