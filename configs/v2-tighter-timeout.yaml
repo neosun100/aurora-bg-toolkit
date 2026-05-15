@@ -1,0 +1,51 @@
+# Optimization v2 — tighter timeout + min-idle pool warm-up + app-level retry.
+# Result: 3.3-6.0s downtime, 0-2 errors per round.
+# Applied changes vs v1-optimized:
+#   1. connectTimeout 3000 -> 2000 (faster recovery on stale Blue IP)
+#   2. minimumIdle 5 -> 10 (== maximumPoolSize, so pool is always warm)
+#   3. workload.retry.enabled=true with 50ms delay (one quick app-layer retry)
+name: v2-tighter-timeout
+description: Tightened timeouts + warm pool + app retry; downtime 3.3-6.0s, 0-2 errors/round.
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+jdbc:
+  wrapperPlugins:
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 50
+  connectTimeout: 2000
+  socketTimeout: 3000
+  failureDetectionTime: null
+  failureDetectionInterval: null
+  failureDetectionCount: null
+  wrapperLoggerLevel: FINEST
+
+hikari:
+  maximumPoolSize: 10
+  minimumIdle: 10
+  initializationFailTimeout: -1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 4
+  intervalMs: 100
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: true
+    delayMs: 50

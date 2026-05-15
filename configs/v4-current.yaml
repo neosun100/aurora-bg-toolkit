@@ -1,0 +1,55 @@
+# V4 — Current production-recommended configuration.
+# Result: 2.7-7.6s downtime, 0-3 errors per round (97% fewer than baseline).
+#
+# Applied changes vs v3:
+#   - Explicit failureDetection tuning (don't rely on wrapper defaults):
+#       failureDetectionTime=6000ms       (vs 30000ms default)
+#       failureDetectionInterval=1000ms   (vs 5000ms default)
+#       failureDetectionCount=3           (unchanged, avoids false positives)
+#
+# This is the configuration the customer is running in production.
+name: v4-current
+description: Production-recommended; 2.7-7.6s downtime, 97% fewer errors than baseline.
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+jdbc:
+  wrapperPlugins:
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 50
+  connectTimeout: 1000
+  socketTimeout: 3000
+  failureDetectionTime: 6000
+  failureDetectionInterval: 1000
+  failureDetectionCount: 3
+  wrapperLoggerLevel: FINEST
+
+hikari:
+  maximumPoolSize: 10
+  minimumIdle: 10
+  initializationFailTimeout: -1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 4
+  intervalMs: 100
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: true
+    delayMs: 50

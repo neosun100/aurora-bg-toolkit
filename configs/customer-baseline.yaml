@@ -1,0 +1,60 @@
+# Customer's original production configuration (faithful reproduction).
+#
+# This config reproduces the 4-57 second downtime problem the customer originally hit:
+#   - No connectTimeout / socketTimeout (lets TCP layer hang ~30s on stale Blue IP)
+#   - Plugin chain includes initialConnection (extra role check)
+#     and auroraConnectionTracker (which evicts old connections one-by-one
+#     under wrapper 4.0.0 -- amplifies the hang to 50-57s)
+#   - initializationFailTimeout=1 (gives up too eagerly when adder can't recover)
+#   - All efm2/failover2 timing parameters at default values
+#   - No application-level retry
+#
+# DO NOT modify this file as a starting point for new tests.
+# Copy v4-current.yaml instead.
+name: customer-baseline
+description: Faithful reproduction of customer's original config; reproduces 4-57s downtime.
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+jdbc:
+  wrapperPlugins:
+    - initialConnection
+    - auroraConnectionTracker
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 50
+  connectTimeout: null      # <-- ABSENT, the root cause of 30s hangs
+  socketTimeout: null       # <-- ABSENT
+  failureDetectionTime: null
+  failureDetectionInterval: null
+  failureDetectionCount: null
+  wrapperLoggerLevel: FINEST
+
+hikari:
+  maximumPoolSize: 10
+  minimumIdle: 5
+  initializationFailTimeout: 1   # <-- gives up too eagerly
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 4
+  intervalMs: 100
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: false           # <-- no app-level retry
+    delayMs: 0

@@ -1,0 +1,52 @@
+# Optimization v1 — first pass.
+# Result: 3.1-7.6s downtime, 10-16 errors per round.
+# Applied changes vs customer-baseline:
+#   1. Removed `initialConnection` (extra role check, unnecessary)
+#   2. Removed `auroraConnectionTracker` (evict-by-tracker amplifies wrapper-4.0.0 hangs)
+#   3. Added connectTimeout=3000ms + socketTimeout=3000ms (TCP-level guard)
+#   4. initializationFailTimeout=-1 (don't surrender when pool can't refill)
+name: v1-optimized
+description: First optimization pass; downtime 3.1-7.6s, 10-16 errors/round.
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+jdbc:
+  wrapperPlugins:
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 50
+  connectTimeout: 3000
+  socketTimeout: 3000
+  failureDetectionTime: null
+  failureDetectionInterval: null
+  failureDetectionCount: null
+  wrapperLoggerLevel: FINEST
+
+hikari:
+  maximumPoolSize: 10
+  minimumIdle: 5
+  initializationFailTimeout: -1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 4
+  intervalMs: 100
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: false
+    delayMs: 0

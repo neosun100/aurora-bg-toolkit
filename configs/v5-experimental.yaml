@@ -1,0 +1,70 @@
+# V5 — Experimental configuration aimed at downtime stability.
+#
+# V4 already lands at 2.7-7.6s. The 7.6s tail is dominated by RDS-internal
+# switchover (the physical floor). The goal of v5 is *not* to push the median
+# lower — it is to **shrink the spread** (max − min) by:
+#
+#   1. Increasing the Hikari pool to 20 so post-switch refill has parallelism.
+#      Rationale: when SuspendConnectRouting releases, multiple adders race to
+#      establish new connections in parallel; with min=10 we already saw
+#      improvement, 20 should further reduce the slowest socket dominating wait.
+#
+#   2. failureDetectionTime 6000 -> 3000 ms.
+#      Rationale: trades a small amount of false-positive risk for ~3s faster
+#      detection on Failover/Reboot scenarios.
+#
+#   3. workload.retry.delayMs 50 -> 25 ms.
+#      Rationale: faster retry catches the brief window between
+#      SuspendConnectRouting release and the new connection becoming available.
+#
+#   4. connectionTestQuery removed (rely on validation via connection roundtrip).
+#      Rationale: under failure, the test query itself can be the thing that
+#      hangs; removing it lets HikariCP do native isClosed() checks.
+#
+# All four changes are theoretical — must be E2E-verified against real Aurora.
+# This file exists as the experimental seed for stage 14/15 of the test plan.
+name: v5-experimental
+description: Stability-focused tuning; not yet validated against real Aurora.
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+jdbc:
+  wrapperPlugins:
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 50
+  connectTimeout: 1000
+  socketTimeout: 3000
+  failureDetectionTime: 3000
+  failureDetectionInterval: 1000
+  failureDetectionCount: 3
+  wrapperLoggerLevel: FINEST
+
+hikari:
+  maximumPoolSize: 20
+  minimumIdle: 20
+  initializationFailTimeout: -1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: null
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 4
+  intervalMs: 100
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: true
+    delayMs: 25
