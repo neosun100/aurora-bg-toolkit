@@ -1,0 +1,253 @@
+# Anonymized trim of original customer-baseline test, ec2 wrapper 4.0.0
+# Original: test-01_customer_20260514_135906/ec2_wrapper4.log (5.5 MB)
+# Reported downtime: WRITE 51.7s, READ 56.6s (HSK-CASE-STUDY)
+# Trim rule: keep all FAIL/RECOVERED events + sample STATS lines, drop SQL stack traces.
+
+[2026-05-14 13:59:08.087] STATS write_ok=9 read_ok=31
+[2026-05-14 13:59:09.081] STATS write_ok=15 read_ok=25
+[2026-05-14 13:59:10.081] STATS write_ok=8 read_ok=30
+[2026-05-14 13:59:11.081] STATS write_ok=9 read_ok=29
+[2026-05-14 13:59:12.081] STATS write_ok=8 read_ok=32
+[2026-05-14 13:59:13.081] STATS write_ok=11 read_ok=29
+[2026-05-14 13:59:14.081] STATS write_ok=14 read_ok=26
+[2026-05-14 13:59:15.081] STATS write_ok=6 read_ok=32
+[2026-05-14 13:59:16.081] STATS write_ok=8 read_ok=30
+[2026-05-14 13:59:17.081] STATS write_ok=9 read_ok=31
+[2026-05-14 13:59:18.081] STATS write_ok=7 read_ok=33
+[2026-05-14 13:59:19.081] STATS write_ok=8 read_ok=32
+[2026-05-14 13:59:20.081] STATS write_ok=10 read_ok=28
+[2026-05-14 13:59:21.081] STATS write_ok=8 read_ok=32
+[2026-05-14 13:59:22.081] STATS write_ok=14 read_ok=24
+[2026-05-14 13:59:23.081] STATS write_ok=11 read_ok=29
+[2026-05-14 13:59:24.081] STATS write_ok=11 read_ok=29
+[2026-05-14 13:59:25.081] STATS write_ok=10 read_ok=30
+[2026-05-14 13:59:26.081] STATS write_ok=8 read_ok=30
+[2026-05-14 13:59:27.081] STATS write_ok=9 read_ok=31
+[2026-05-14 13:59:28.081] STATS write_ok=7 read_ok=31
+[2026-05-14 13:59:29.081] STATS write_ok=8 read_ok=32
+[2026-05-14 13:59:30.081] STATS write_ok=9 read_ok=31
+[2026-05-14 13:59:31.081] STATS write_ok=7 read_ok=33
+[2026-05-14 13:59:32.081] STATS write_ok=6 read_ok=32
+[2026-05-14 13:59:33.081] STATS write_ok=10 read_ok=29
+[2026-05-14 13:59:34.081] STATS write_ok=11 read_ok=28
+[2026-05-14 13:59:35.081] STATS write_ok=11 read_ok=29
+[2026-05-14 13:59:36.081] STATS write_ok=8 read_ok=32
+[2026-05-14 13:59:37.081] STATS write_ok=13 read_ok=27
+[2026-05-14 13:59:38.081] STATS write_ok=11 read_ok=26
+[2026-05-14 13:59:39.081] STATS write_ok=10 read_ok=30
+[2026-05-14 13:59:40.081] STATS write_ok=10 read_ok=29
+[2026-05-14 13:59:41.081] STATS write_ok=5 read_ok=35
+[2026-05-14 13:59:42.081] STATS write_ok=8 read_ok=32
+[2026-05-14 13:59:43.081] STATS write_ok=6 read_ok=33
+[2026-05-14 13:59:44.081] STATS write_ok=10 read_ok=28
+[2026-05-14 13:59:45.081] STATS write_ok=7 read_ok=33
+[2026-05-14 13:59:46.081] STATS write_ok=10 read_ok=29
+[2026-05-14 13:59:47.081] STATS write_ok=14 read_ok=26
+[2026-05-14 13:59:48.081] STATS write_ok=4 read_ok=36
+[2026-05-14 13:59:49.081] STATS write_ok=14 read_ok=24
+[2026-05-14 13:59:50.081] STATS write_ok=7 read_ok=32
+[2026-05-14 13:59:51.081] STATS write_ok=10 read_ok=30
+[2026-05-14 13:59:52.081] STATS write_ok=13 read_ok=26
+[2026-05-14 13:59:53.081] STATS write_ok=10 read_ok=30
+[2026-05-14 13:59:54.081] STATS write_ok=13 read_ok=27
+[2026-05-14 13:59:55.081] STATS write_ok=13 read_ok=25
+[2026-05-14 13:59:56.081] STATS write_ok=11 read_ok=28
+[2026-05-14 13:59:57.081] STATS write_ok=14 read_ok=25
+[2026-05-14 13:59:58.081] STATS write_ok=8 read_ok=32
+[2026-05-14 13:59:59.081] STATS write_ok=10 read_ok=30
+[2026-05-14 14:00:00.081] STATS write_ok=7 read_ok=33
+[2026-05-14 14:00:01.081] STATS write_ok=10 read_ok=27
+[2026-05-14 14:00:02.081] STATS write_ok=12 read_ok=27
+[2026-05-14 14:00:03.081] STATS write_ok=10 read_ok=30
+[2026-05-14 14:00:04.081] STATS write_ok=12 read_ok=28
+[2026-05-14 14:00:05.081] STATS write_ok=8 read_ok=32
+[2026-05-14 14:00:06.081] STATS write_ok=7 read_ok=30
+[2026-05-14 14:00:07.081] STATS write_ok=11 read_ok=28
+[2026-05-14 14:00:08.081] STATS write_ok=11 read_ok=29
+[2026-05-14 14:00:09.081] STATS write_ok=11 read_ok=29
+[2026-05-14 14:00:10.081] STATS write_ok=11 read_ok=29
+[2026-05-14 14:00:11.081] STATS write_ok=6 read_ok=34
+[2026-05-14 14:00:12.081] STATS write_ok=7 read_ok=30
+[2026-05-14 14:00:13.081] STATS write_ok=18 read_ok=21
+[2026-05-14 14:00:14.081] STATS write_ok=6 read_ok=34
+[2026-05-14 14:00:15.081] STATS write_ok=8 read_ok=32
+[2026-05-14 14:00:16.081] STATS write_ok=14 read_ok=26
+[2026-05-14 14:00:17.081] STATS write_ok=14 read_ok=25
+[2026-05-14 14:00:18.081] STATS write_ok=9 read_ok=28
+[2026-05-14 14:00:19.081] STATS write_ok=12 read_ok=28
+[2026-05-14 14:00:20.081] STATS write_ok=11 read_ok=29
+[2026-05-14 14:00:21.081] STATS write_ok=8 read_ok=32
+[2026-05-14 14:00:22.081] STATS write_ok=9 read_ok=31
+[2026-05-14 14:00:23.081] STATS write_ok=11 read_ok=28
+[2026-05-14 14:00:24.081] STATS write_ok=10 read_ok=27
+[2026-05-14 14:00:25.081] STATS write_ok=7 read_ok=33
+[2026-05-14 14:00:26.081] STATS write_ok=9 read_ok=31
+[2026-05-14 14:00:27.081] STATS write_ok=11 read_ok=29
+[2026-05-14 14:00:28.081] STATS write_ok=11 read_ok=29
+[2026-05-14 14:00:29.081] STATS write_ok=10 read_ok=28
+[2026-05-14 14:00:30.081] STATS write_ok=13 read_ok=25
+[2026-05-14 14:00:31.081] STATS write_ok=11 read_ok=29
+[2026-05-14 14:00:32.081] STATS write_ok=12 read_ok=28
+[2026-05-14 14:00:33.081] STATS write_ok=9 read_ok=31
+[2026-05-14 14:00:34.081] STATS write_ok=14 read_ok=25
+[2026-05-14 14:00:35.081] STATS write_ok=9 read_ok=30
+[2026-05-14 14:00:36.081] STATS write_ok=8 read_ok=31
+[2026-05-14 14:00:37.081] STATS write_ok=14 read_ok=25
+[2026-05-14 14:00:38.081] STATS write_ok=8 read_ok=32
+[2026-05-14 14:00:39.081] STATS write_ok=13 read_ok=27
+[2026-05-14 14:00:40.081] STATS write_ok=10 read_ok=28
+[2026-05-14 14:00:41.081] STATS write_ok=8 read_ok=31
+[2026-05-14 14:00:42.081] STATS write_ok=11 read_ok=29
+[2026-05-14 14:00:43.053] READ_FAIL query=2822 elapsed_ms=13 consecutive=1 err=SQLNonTransientConnectionException: No operations allowed after connection closed.
+[2026-05-14 14:00:43.056] READ_FAIL query=2823 elapsed_ms=8 consecutive=2 err=SQLNonTransientConnectionException: No operations allowed after connection closed.
+[2026-05-14 14:00:43.081] STATS write_ok=7 write_fail=0 read_ok=30 read_fail=2
+[2026-05-14 14:00:43.097] READ_FAIL query=2824 elapsed_ms=3 consecutive=3 err=SQLNonTransientConnectionException: No operations allowed after connection closed.
+[2026-05-14 14:00:44.081] STATS write_ok=0 write_fail=0 read_ok=0 read_fail=1
+[2026-05-14 14:00:45.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:00:46.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:00:47.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:00:48.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:00:48.112] WRITE_FAIL seq=950 elapsed_ms=5000 consecutive=1 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:00:48.154] WRITE_FAIL seq=951 elapsed_ms=5000 consecutive=2 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:00:48.156] WRITE_FAIL seq=952 elapsed_ms=5000 consecutive=3 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:00:48.198] READ_FAIL query=2825 elapsed_ms=5000 consecutive=4 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:00:49.081] STATS write_ok=0 write_fail=3 read_ok=0 read_fail=1
+[2026-05-14 14:00:50.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:00:51.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:00:52.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:00:53.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:00:53.213] READ_FAIL query=2826 elapsed_ms=5000 consecutive=5 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:00:53.254] READ_FAIL query=2827 elapsed_ms=5000 consecutive=6 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:00:53.257] WRITE_FAIL seq=953 elapsed_ms=5000 consecutive=4 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:00:53.298] READ_FAIL query=2828 elapsed_ms=5000 consecutive=7 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:00:54.081] STATS write_ok=0 write_fail=1 read_ok=0 read_fail=3
+[2026-05-14 14:00:55.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:00:56.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:00:57.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:00:58.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:00:58.314] READ_FAIL query=2829 elapsed_ms=5000 consecutive=8 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:00:58.354] READ_FAIL query=2830 elapsed_ms=5000 consecutive=9 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:00:58.357] READ_FAIL query=2831 elapsed_ms=5000 consecutive=10 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:00:58.399] READ_FAIL query=2832 elapsed_ms=5000 consecutive=11 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:00:59.081] STATS write_ok=0 write_fail=0 read_ok=0 read_fail=4
+[2026-05-14 14:01:00.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:01.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:02.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:03.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:03.414] WRITE_FAIL seq=954 elapsed_ms=5000 consecutive=5 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:03.455] READ_FAIL query=2833 elapsed_ms=5000 consecutive=12 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:03.457] READ_FAIL query=2834 elapsed_ms=5000 consecutive=13 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:03.499] READ_FAIL query=2835 elapsed_ms=5000 consecutive=14 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:04.081] STATS write_ok=0 write_fail=1 read_ok=0 read_fail=3
+[2026-05-14 14:01:05.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:06.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:07.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:08.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:08.515] READ_FAIL query=2836 elapsed_ms=5000 consecutive=15 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:08.555] READ_FAIL query=2837 elapsed_ms=5000 consecutive=16 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:08.558] READ_FAIL query=2838 elapsed_ms=5000 consecutive=17 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:08.600] WRITE_FAIL seq=955 elapsed_ms=5000 consecutive=6 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:09.081] STATS write_ok=0 write_fail=1 read_ok=0 read_fail=3
+[2026-05-14 14:01:10.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:11.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:12.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:13.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:13.615] READ_FAIL query=2839 elapsed_ms=5000 consecutive=18 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:13.656] WRITE_FAIL seq=956 elapsed_ms=5000 consecutive=7 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:13.658] READ_FAIL query=2840 elapsed_ms=5000 consecutive=19 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:13.700] READ_FAIL query=2841 elapsed_ms=5000 consecutive=20 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:14.081] STATS write_ok=0 write_fail=1 read_ok=0 read_fail=3
+[2026-05-14 14:01:15.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:16.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:17.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:18.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:18.716] READ_FAIL query=2842 elapsed_ms=5000 consecutive=21 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:18.756] WRITE_FAIL seq=957 elapsed_ms=5000 consecutive=8 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:18.758] READ_FAIL query=2843 elapsed_ms=5000 consecutive=22 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:18.800] READ_FAIL query=2844 elapsed_ms=5000 consecutive=23 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:19.081] STATS write_ok=0 write_fail=1 read_ok=0 read_fail=3
+[2026-05-14 14:01:20.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:21.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:22.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:23.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:23.816] READ_FAIL query=2845 elapsed_ms=5000 consecutive=24 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:23.857] WRITE_FAIL seq=958 elapsed_ms=5000 consecutive=9 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:23.859] READ_FAIL query=2846 elapsed_ms=5000 consecutive=25 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:23.901] READ_FAIL query=2847 elapsed_ms=5000 consecutive=26 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:24.081] STATS write_ok=0 write_fail=1 read_ok=0 read_fail=3
+[2026-05-14 14:01:25.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:26.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:27.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:28.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:28.917] READ_FAIL query=2848 elapsed_ms=5000 consecutive=27 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:28.957] READ_FAIL query=2849 elapsed_ms=5000 consecutive=28 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:28.959] READ_FAIL query=2850 elapsed_ms=5000 consecutive=29 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:29.001] WRITE_FAIL seq=959 elapsed_ms=5000 consecutive=10 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:29.081] STATS write_ok=0 write_fail=1 read_ok=0 read_fail=3
+[2026-05-14 14:01:30.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:31.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:32.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:33.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:34.017] READ_FAIL query=2851 elapsed_ms=5000 consecutive=30 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:34.057] WRITE_FAIL seq=960 elapsed_ms=5000 consecutive=11 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:34.060] WRITE_FAIL seq=961 elapsed_ms=5000 consecutive=12 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:34.081] STATS write_ok=0 write_fail=2 read_ok=0 read_fail=1
+[2026-05-14 14:01:34.102] READ_FAIL query=2852 elapsed_ms=5000 consecutive=31 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:35.081] STATS write_ok=0 write_fail=0 read_ok=0 read_fail=1
+[2026-05-14 14:01:36.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:37.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:38.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:39.081] STATS write_ok=0 read_ok=0
+[2026-05-14 14:01:39.118] READ_FAIL query=2853 elapsed_ms=5000 consecutive=32 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:39.158] READ_FAIL query=2854 elapsed_ms=5000 consecutive=33 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:39.160] READ_FAIL query=2855 elapsed_ms=5000 consecutive=34 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:39.202] READ_FAIL query=2856 elapsed_ms=5000 consecutive=35 err=SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 5000ms.
+[2026-05-14 14:01:39.337] READ_RECOVERED after 35 consecutive failures
+[2026-05-14 14:01:39.354] WRITE_RECOVERED after 12 consecutive failures
+[2026-05-14 14:01:40.081] STATS write_ok=7 write_fail=0 read_ok=25 read_fail=4
+[2026-05-14 14:01:41.081] STATS write_ok=7 read_ok=32
+[2026-05-14 14:01:42.081] STATS write_ok=9 read_ok=28
+[2026-05-14 14:01:43.081] STATS write_ok=8 read_ok=32
+[2026-05-14 14:01:44.081] STATS write_ok=15 read_ok=25
+[2026-05-14 14:01:45.081] STATS write_ok=13 read_ok=27
+[2026-05-14 14:01:46.081] STATS write_ok=9 read_ok=30
+[2026-05-14 14:01:47.081] STATS write_ok=8 read_ok=30
+[2026-05-14 14:01:48.081] STATS write_ok=11 read_ok=28
+[2026-05-14 14:01:49.081] STATS write_ok=6 read_ok=34
+[2026-05-14 14:01:50.081] STATS write_ok=7 read_ok=33
+[2026-05-14 14:01:51.081] STATS write_ok=13 read_ok=25
+[2026-05-14 14:01:52.081] STATS write_ok=10 read_ok=30
+[2026-05-14 14:01:53.081] STATS write_ok=9 read_ok=29
+[2026-05-14 14:01:54.081] STATS write_ok=9 read_ok=31
+[2026-05-14 14:01:55.081] STATS write_ok=4 read_ok=36
+[2026-05-14 14:01:56.081] STATS write_ok=14 read_ok=26
+[2026-05-14 14:01:57.081] STATS write_ok=10 read_ok=28
+[2026-05-14 14:01:58.081] STATS write_ok=9 read_ok=30
+[2026-05-14 14:01:59.081] STATS write_ok=9 read_ok=30
+[2026-05-14 14:02:00.081] STATS write_ok=8 read_ok=32
+[2026-05-14 14:02:01.081] STATS write_ok=9 read_ok=30
+[2026-05-14 14:02:02.081] STATS write_ok=8 read_ok=31
+[2026-05-14 14:02:03.081] STATS write_ok=9 read_ok=31
+[2026-05-14 14:02:04.081] STATS write_ok=12 read_ok=26
+[2026-05-14 14:02:05.081] STATS write_ok=8 read_ok=32
+[2026-05-14 14:02:06.081] STATS write_ok=13 read_ok=26
+[2026-05-14 14:02:07.081] STATS write_ok=10 read_ok=29
+[2026-05-14 14:02:08.081] STATS write_ok=13 read_ok=27
+[2026-05-14 14:02:09.081] STATS write_ok=11 read_ok=27
+[2026-05-14 14:02:10.081] STATS write_ok=9 read_ok=31
+[2026-05-14 14:02:11.081] STATS write_ok=9 read_ok=31
+[2026-05-14 14:02:12.081] STATS write_ok=11 read_ok=28
+[2026-05-14 14:02:13.081] STATS write_ok=13 read_ok=25
+[2026-05-14 14:02:14.081] STATS write_ok=11 read_ok=29
+[2026-05-14 14:02:15.081] STATS write_ok=8 read_ok=31
+[2026-05-14 14:02:16.081] STATS write_ok=8 read_ok=32
+[2026-05-14 14:02:17.081] STATS write_ok=11 read_ok=29
+[2026-05-14 14:02:18.081] STATS write_ok=12 read_ok=27
+[2026-05-14 14:02:19.081] STATS write_ok=12 read_ok=26
+[2026-05-14 14:02:20.081] STATS write_ok=6 read_ok=33
+[2026-05-14 14:02:21.081] STATS write_ok=9 read_ok=31
+[2026-05-14 14:02:22.081] STATS write_ok=11 read_ok=29
+[2026-05-14 14:02:23.081] STATS write_ok=8 read_ok=31
+[2026-05-14 14:02:24.081] STATS write_ok=15 read_ok=23
+[2026-05-14 14:02:25.081] STATS write_ok=11 read_ok=29
+[2026-05-14 14:02:26.081] STATS write_ok=9 read_ok=30

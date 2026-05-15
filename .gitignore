@@ -25,6 +25,8 @@ Thumbs.db
 logs/
 *.log
 *.pid
+# But DO commit reference logs used as test fixtures
+!samples/reference-logs/*.log
 
 # Test output
 test-output/
