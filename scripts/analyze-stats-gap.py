@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 """
-analyze-stats-gap.py — alternative downtime analysis based on STATS gaps.
+analyze-stats-gap.py — measure downtime as zero-throughput windows in STATS lines.
 
-While analyze-logs.py looks at WRITE_FAIL/RECOVERED markers (errors visible
-to the application), this analyzer looks at the STATS lines emitted every
-second by the workload reporter:
+This is the most reliable downtime metric for wrapper 4.0+ where application-
+layer exceptions are masked by the bg plugin's enhanced switchover handling.
 
-    STATS write_ok=N read_ok=N
+Two parsing modes:
+  1. Timestamped logs (preferred): "2026-05-15 15:20:00.000 ... STATS write_ok=N"
+     Window durations come from real timestamps.
+  2. Plain logs (fallback): "[bg-stats-reporter] ... STATS write_ok=N"
+     Window durations come from counting STATS lines (the reporter runs at
+     1Hz, so 1 STATS line ≈ 1 second). Less precise but functional.
 
-A consecutive run of STATS lines where write_ok=0 (or read_ok=0) indicates
-the workload was actually unable to make progress on that operation type,
-even if no exception was thrown.
+The script auto-detects which mode to use.
 
-This is the more sensible measure for the WRAPPER 4.0+ enhanced mode where
-bg plugin's SuspendConnectRouting silently parks new connections during
-switchover instead of throwing exceptions visible to the workload.
+Usage:
+    analyze-stats-gap.py <log-file>
 """
 from __future__ import annotations
 import argparse
@@ -24,49 +25,87 @@ import re
 import sys
 from pathlib import Path
 
-STATS_RE = re.compile(
+TIMESTAMPED_RE = re.compile(
     r"^\[?(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})\]?"
     r".*?STATS\b.*?write_ok=(?P<wok>\d+).*?read_ok=(?P<rok>\d+)"
+)
+PLAIN_RE = re.compile(
+    r"STATS\b.*?write_ok=(?P<wok>\d+).*?read_ok=(?P<rok>\d+)"
 )
 TS_FMT = "%Y-%m-%d %H:%M:%S.%f"
 
 
 def parse_stats(path: Path):
-    out = []
+    """Returns (samples, mode) where samples is a list of (ts_or_index, wok, rok)
+    and mode is "timestamped" or "indexed"."""
+    timestamped = []
+    indexed = []
     with path.open("r", errors="replace") as f:
         for line in f:
-            m = STATS_RE.search(line)
+            m = TIMESTAMPED_RE.search(line)
             if m:
-                out.append((
+                timestamped.append((
                     dt.datetime.strptime(m["ts"], TS_FMT),
                     int(m["wok"]),
                     int(m["rok"]),
                 ))
-    return out
+                continue
+            # Fallback: any STATS line (no timestamp)
+            m2 = PLAIN_RE.search(line)
+            if m2:
+                indexed.append((
+                    len(indexed),  # use line index as 1-second proxy
+                    int(m2["wok"]),
+                    int(m2["rok"]),
+                ))
+    if timestamped:
+        return timestamped, "timestamped"
+    return indexed, "indexed"
 
 
-def gaps(samples, key_idx, label):
-    """Return list of (start_ts, end_ts, duration_s) where the metric was 0."""
+def gaps(samples, key_idx, label, mode):
+    """Find runs of samples where sample[key_idx] == 0; return list of windows.
+
+    In timestamped mode, durations are computed from actual timestamps.
+    In indexed mode, each sample = 1 second (the reporter is 1Hz)."""
     out = []
-    in_gap_start = None
-    last_ts = None
+    streak_start_key = None
+    last_key = None
     for s in samples:
-        ts = s[0]
+        key = s[0]
         v = s[key_idx]
         if v == 0:
-            if in_gap_start is None:
-                in_gap_start = ts
-            last_ts = ts
+            if streak_start_key is None:
+                streak_start_key = key
+            last_key = key
         else:
-            if in_gap_start is not None and last_ts is not None and last_ts != in_gap_start:
-                out.append({
-                    "kind": label,
-                    "start": in_gap_start.isoformat(timespec="milliseconds"),
-                    "end": last_ts.isoformat(timespec="milliseconds"),
-                    "durationMs": int((last_ts - in_gap_start).total_seconds() * 1000),
-                })
-            in_gap_start = None
-            last_ts = None
+            if streak_start_key is not None and last_key is not None:
+                if mode == "timestamped":
+                    duration_ms = int((last_key - streak_start_key).total_seconds() * 1000)
+                    start_iso = streak_start_key.isoformat(timespec="milliseconds")
+                    end_iso = last_key.isoformat(timespec="milliseconds")
+                else:
+                    duration_ms = (last_key - streak_start_key + 1) * 1000
+                    start_iso = f"sample#{streak_start_key}"
+                    end_iso = f"sample#{last_key}"
+                # Filter trivial 0-duration single-point gaps for the timestamped case
+                if duration_ms > 0 or mode == "indexed":
+                    out.append({
+                        "kind": label,
+                        "start": start_iso,
+                        "end": end_iso,
+                        "durationMs": duration_ms,
+                    })
+            streak_start_key = None
+            last_key = None
+    # Trailing streak
+    if streak_start_key is not None and last_key is not None:
+        if mode == "timestamped":
+            duration_ms = int((last_key - streak_start_key).total_seconds() * 1000)
+        else:
+            duration_ms = (last_key - streak_start_key + 1) * 1000
+        if duration_ms > 0:
+            out.append({"kind": label, "start": str(streak_start_key), "end": str(last_key), "durationMs": duration_ms})
     return out
 
 
@@ -75,16 +114,17 @@ def main():
     ap.add_argument("log", type=Path)
     args = ap.parse_args()
 
-    samples = parse_stats(args.log)
+    samples, mode = parse_stats(args.log)
     if not samples:
-        print("no STATS lines found", file=sys.stderr)
+        print(json.dumps({"error": "no STATS lines found", "log": str(args.log)}))
         return 1
 
-    write_gaps = gaps(samples, 1, "WRITE_GAP")
-    read_gaps = gaps(samples, 2, "READ_GAP")
+    write_gaps = gaps(samples, 1, "WRITE_GAP", mode)
+    read_gaps = gaps(samples, 2, "READ_GAP", mode)
     out = {
-        "schema": 1,
+        "schema": 2,
         "log": str(args.log),
+        "parseMode": mode,
         "statsCount": len(samples),
         "writeGaps": write_gaps,
         "readGaps": read_gaps,
