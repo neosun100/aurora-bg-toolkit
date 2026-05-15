@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 20-create-ec2.sh — launch the test-client EC2 instance.
 #
-# Single c6i.large in the same VPC as the Aurora clusters, with:
+# Single c6i.2xlarge in the same VPC as the Aurora clusters, with:
 #   * Java 17 (Amazon Corretto)
 #   * The aurora-bg-toolkit fat-jar(s) for both wrapper 3.3.0 and 4.0.0
 #   * IAM role with secretsmanager:GetSecretValue + rds:Describe* permissions
@@ -59,7 +59,7 @@ if [[ -n "$EXISTING" ]]; then
 else
     INSTANCE_ID=$(aws_ ec2 run-instances \
         --image-id "$ABT_AMI_ID" \
-        --instance-type c6i.large \
+        --instance-type c6i.2xlarge \
         --key-name "$ABT_KEY_NAME" \
         --security-group-ids "$ABT_SG_ID" \
         --subnet-id "$SUBNET_ID" \

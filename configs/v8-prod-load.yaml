@@ -1,0 +1,73 @@
+# V8 — Production-load configuration. Simulates a real exchange/gateway-tier
+# workload, NOT the lightweight 40 ops/s the original engagement used.
+#
+# Why this exists:
+# The original HSK testbed used 4 threads × 100ms = ~40 ops/s. That was small
+# enough to never stress the connection pool, so any "downtime" was actually
+# a measure of when the bg plugin's internal mechanisms could complete.
+# Real production gateway services run hundreds of operations per second
+# against a much larger connection pool. v8 reproduces that load profile so
+# we can see if higher concurrency uncovers degradation modes that 40 ops/s
+# missed.
+#
+# Differences from v4-current (the prior production recommendation):
+#   - workload threads: 4    -> 64    (16x more concurrent operations)
+#   - workload intervalMs: 100 -> 50   (2x faster issuance per thread)
+#     -> aggregate throughput: ~40 ops/s -> ~1280 ops/s
+#   - maximumPoolSize: 10 -> 50         (5x more concurrent connections)
+#   - minimumIdle:    10 -> 50          (warm pool at full size)
+#   - retryDelayMs:    50 -> 25         (faster app-layer recovery)
+#
+# Same as v4 (do not change for like-for-like comparison):
+#   - connectTimeout: 1000ms
+#   - socketTimeout:  3000ms
+#   - failureDetection times
+#   - workload weights 9:2:1
+#
+# Hardware requirement: client EC2 must be at least c6i.2xlarge (8 vCPU)
+# to drive 1280 ops/s without becoming the bottleneck itself.
+name: v8-prod-load
+description: V4 timeouts + production-grade concurrency (1280 ops/s, pool=50).
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+jdbc:
+  wrapperPlugins:
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 50
+  connectTimeout: 1000
+  socketTimeout: 3000
+  failureDetectionTime: 6000
+  failureDetectionInterval: 1000
+  failureDetectionCount: 3
+  wrapperLoggerLevel: INFO   # downgrade from FINEST so 1280 ops/s logging doesn't drown the disk
+
+hikari:
+  maximumPoolSize: 50
+  minimumIdle: 50
+  initializationFailTimeout: -1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 64
+  intervalMs: 50
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: true
+    delayMs: 25

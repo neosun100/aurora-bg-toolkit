@@ -1,0 +1,56 @@
+# Customer Baseline at production load — same problem profile as the original
+# customer-baseline.yaml (no connectTimeout, plugin chain with auroraConnectionTracker)
+# but driven at 1280 ops/s with pool=50 instead of the lightweight 40 ops/s pool=10.
+#
+# Hypothesis: higher concurrency makes the existing bug worse, not just the
+# same. With 50 connections in the pool, the wrapper has to refill 50 broken
+# connections after switchover, every refill possibly hanging on the stale
+# Blue IP for 30s. We expect downtime to be longer than the 34s we measured
+# at low load.
+name: customer-baseline-prod-load
+description: Customer's broken config under production-grade load (1280 ops/s, pool=50).
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+jdbc:
+  wrapperPlugins:
+    - initialConnection
+    - auroraConnectionTracker
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 50
+  connectTimeout: null      # <-- THE BUG: no TCP timeout
+  socketTimeout: null
+  failureDetectionTime: null
+  failureDetectionInterval: null
+  failureDetectionCount: null
+  wrapperLoggerLevel: INFO
+
+hikari:
+  maximumPoolSize: 50
+  minimumIdle: 25
+  initializationFailTimeout: 1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 64
+  intervalMs: 50
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: false   # customer original has no app-layer retry
+    delayMs: 0
