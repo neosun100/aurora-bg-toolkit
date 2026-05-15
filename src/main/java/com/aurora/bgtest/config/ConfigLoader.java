@@ -97,7 +97,12 @@ public final class ConfigLoader {
                 Boolean.TRUE.equals(retry.get("enabled")),
                 ((Number) retry.getOrDefault("delayMs", 0)).intValue());
 
-        return new TestConfig(name, description, database, jdbc, hikari, workload);
+        Map<String, Object> dnsMap = (Map<String, Object>) map.getOrDefault("dnsWarmup", Map.of());
+        TestConfig.DnsWarmup dns = new TestConfig.DnsWarmup(
+                Boolean.TRUE.equals(dnsMap.get("enabled")),
+                ((Number) dnsMap.getOrDefault("intervalMs", 1000)).intValue());
+
+        return new TestConfig(name, description, database, jdbc, hikari, workload, dns);
     }
 
     // ---- helpers --------------------------------------------------------

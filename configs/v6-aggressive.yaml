@@ -1,0 +1,62 @@
+# V6 — Aggressive timeout exploration on top of v4.
+#
+# Hypothesis: v4 has 7.6s tail mostly from connectTimeout=1000ms. If we cut
+# connectTimeout to 500ms and tighten failureDetection accordingly, the
+# tail should drop by ~500ms.
+#
+# Risk: more false positives on transient network blips. The extra app-level
+# retry (already in v4) absorbs single false positives, so this should still
+# be safe. The dashboard's spread (max - min) is the headline metric to watch.
+#
+# Changes vs v4-current:
+#   1. connectTimeout 1000 -> 500
+#   2. bgHighMs 50 -> 20  (poll the BG state more aggressively)
+#   3. failureDetectionTime 6000 -> 3000  (faster Failover detection)
+#   4. failureDetectionInterval 1000 -> 500
+#
+# Status: experimental. Validate via the 10/10/10 E2E matrix.
+name: v6-aggressive
+description: V4 + tighter timeouts; experimental.
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+jdbc:
+  wrapperPlugins:
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 20
+  connectTimeout: 500
+  socketTimeout: 3000
+  failureDetectionTime: 3000
+  failureDetectionInterval: 500
+  failureDetectionCount: 3
+  wrapperLoggerLevel: FINEST
+
+hikari:
+  maximumPoolSize: 10
+  minimumIdle: 10
+  initializationFailTimeout: -1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 4
+  intervalMs: 100
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: true
+    delayMs: 50

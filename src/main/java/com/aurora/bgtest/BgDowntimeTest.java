@@ -4,6 +4,7 @@ import com.aurora.bgtest.config.ConfigLoader;
 import com.aurora.bgtest.config.JdbcUrlBuilder;
 import com.aurora.bgtest.config.TestConfig;
 import com.aurora.bgtest.util.DnsUtil;
+import com.aurora.bgtest.util.DnsWarmupThread;
 import com.aurora.bgtest.util.PoolMonitor;
 import com.aurora.bgtest.workload.MixedWorkload;
 import com.aurora.bgtest.workload.Stats;
@@ -84,9 +85,18 @@ public final class BgDowntimeTest {
             Stats stats = new Stats();
             MixedWorkload workload = new MixedWorkload(dataSource, config, tableName, stats);
 
+            // Optional DNS warmup background thread (V7+ configs enable it)
+            DnsWarmupThread warmup = null;
+            if (config.dnsWarmup().enabled()) {
+                warmup = new DnsWarmupThread(endpoint, config.dnsWarmup().intervalMs());
+                warmup.start();
+            }
+            DnsWarmupThread finalWarmup = warmup;
+
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 LOG.info("Shutdown hook: stopping workload");
                 workload.stop();
+                if (finalWarmup != null) finalWarmup.stop();
             }, "bg-shutdown-hook"));
 
             workload.start();

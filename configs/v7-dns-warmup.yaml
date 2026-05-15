@@ -1,0 +1,67 @@
+# V7 — V6 plus background DNS warmup for the cluster endpoint.
+#
+# Hypothesis: After SuspendConnectRouting releases (T+17s), the JVM's DNS
+# cache may still hold the stale Blue IP. By warming up DNS every second
+# in a background thread, the lookup at recovery time is instant and the
+# pool can connect to the Green IP without an extra TCP timeout cycle.
+#
+# Implementation: dnsWarmup.enabled=true tells BgDowntimeTest to spawn a
+# daemon thread that calls InetAddress.getAllByName(endpoint) every
+# dnsWarmup.intervalMs ms. That thread re-queries through normal Java DNS
+# resolution, refreshing the JVM resolver cache (which by default in many
+# JVMs has TTL=30s, far too long for a BG switchover).
+#
+# Note: this YAML schema knob is wired via a small extension to
+# BgDowntimeTest; existing configs (v0-v6) ignore the dnsWarmup section.
+#
+# Status: experimental, hypothesis-only. v6 must already be measured before
+# we can claim v7's deltas are real.
+name: v7-dns-warmup
+description: V6 + background DNS warmup thread; experimental.
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+jdbc:
+  wrapperPlugins:
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 20
+  connectTimeout: 500
+  socketTimeout: 3000
+  failureDetectionTime: 3000
+  failureDetectionInterval: 500
+  failureDetectionCount: 3
+  wrapperLoggerLevel: FINEST
+
+hikari:
+  maximumPoolSize: 10
+  minimumIdle: 10
+  initializationFailTimeout: -1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 4
+  intervalMs: 100
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: true
+    delayMs: 50
+
+dnsWarmup:
+  enabled: true
+  intervalMs: 1000

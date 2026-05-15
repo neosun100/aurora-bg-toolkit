@@ -17,15 +17,24 @@ public final class TestConfig {
     private final Jdbc jdbc;
     private final Hikari hikari;
     private final Workload workload;
+    private final DnsWarmup dnsWarmup;
 
     public TestConfig(String name, String description,
-                      Database database, Jdbc jdbc, Hikari hikari, Workload workload) {
+                      Database database, Jdbc jdbc, Hikari hikari, Workload workload,
+                      DnsWarmup dnsWarmup) {
         this.name = Objects.requireNonNull(name, "config.name is required");
         this.description = description == null ? "" : description;
         this.database = Objects.requireNonNull(database, "database section is required");
         this.jdbc = Objects.requireNonNull(jdbc, "jdbc section is required");
         this.hikari = Objects.requireNonNull(hikari, "hikari section is required");
         this.workload = Objects.requireNonNull(workload, "workload section is required");
+        this.dnsWarmup = dnsWarmup == null ? DnsWarmup.disabled() : dnsWarmup;
+    }
+
+    /** Backwards-compatible 6-arg constructor; treats DNS warmup as disabled. */
+    public TestConfig(String name, String description,
+                      Database database, Jdbc jdbc, Hikari hikari, Workload workload) {
+        this(name, description, database, jdbc, hikari, workload, DnsWarmup.disabled());
     }
 
     public String name() { return name; }
@@ -34,6 +43,7 @@ public final class TestConfig {
     public Jdbc jdbc() { return jdbc; }
     public Hikari hikari() { return hikari; }
     public Workload workload() { return workload; }
+    public DnsWarmup dnsWarmup() { return dnsWarmup; }
 
     // ------------------------------------------------------------------
     // Nested config sections
@@ -170,5 +180,21 @@ public final class TestConfig {
         public int totalWeight() { return readWeight + insertWeight + updateWeight; }
         public boolean retryEnabled() { return retryEnabled; }
         public int retryDelayMs() { return retryDelayMs; }
+    }
+
+    /** Optional background DNS warmup. Disabled by default for backwards compatibility. */
+    public static final class DnsWarmup {
+        private final boolean enabled;
+        private final int intervalMs;
+
+        public DnsWarmup(boolean enabled, int intervalMs) {
+            this.enabled = enabled;
+            this.intervalMs = intervalMs <= 0 ? 1000 : intervalMs;
+        }
+
+        public static DnsWarmup disabled() { return new DnsWarmup(false, 1000); }
+
+        public boolean enabled() { return enabled; }
+        public int intervalMs() { return intervalMs; }
     }
 }

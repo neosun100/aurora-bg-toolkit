@@ -68,4 +68,22 @@ class ShippedConfigsParseTest {
         assertThat(c.hikari().connectionTestQuery()).isNull();   // explicitly disabled in v5
         assertThat(c.workload().retryDelayMs()).isEqualTo(25);
     }
+
+    @Test
+    void v6AggressiveParses() throws Exception {
+        TestConfig c = ConfigLoader.fromPath(CONFIGS.resolve("v6-aggressive.yaml"));
+        assertThat(c.jdbc().connectTimeout()).isEqualTo(500);
+        assertThat(c.jdbc().bgHighMs()).isEqualTo(20);
+        assertThat(c.jdbc().failureDetectionTime()).isEqualTo(3000);
+        assertThat(c.jdbc().failureDetectionInterval()).isEqualTo(500);
+        assertThat(c.dnsWarmup().enabled()).isFalse();   // v6 doesn't enable DNS warmup
+    }
+
+    @Test
+    void v7DnsWarmupParses() throws Exception {
+        TestConfig c = ConfigLoader.fromPath(CONFIGS.resolve("v7-dns-warmup.yaml"));
+        assertThat(c.dnsWarmup().enabled()).isTrue();
+        assertThat(c.dnsWarmup().intervalMs()).isEqualTo(1000);
+        assertThat(c.jdbc().connectTimeout()).isEqualTo(500);
+    }
 }
