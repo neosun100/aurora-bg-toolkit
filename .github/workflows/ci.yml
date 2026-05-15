@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  java-build:
+    name: Java build + tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: corretto
+          java-version: '17'
+          cache: maven
+
+      - name: Install local wrapper jars
+        run: ./scripts/install-local-wrapper-jars.sh
+
+      - name: mvn verify (default profile = wrapper 4.0.0)
+        run: mvn -B verify
+
+      - name: mvn package -Pwrapper-3.3
+        run: mvn -B clean package -DskipITs -Pwrapper-3.3
+
+      - name: mvn package -Pwrapper-4.1
+        run: mvn -B clean package -DskipITs -Pwrapper-4.1
+
+      - name: mvn package -Pwrapper-mvncentral
+        run: mvn -B clean package -DskipITs -Pwrapper-mvncentral
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            target/surefire-reports/
+            target/failsafe-reports/
+
+  python-lint:
+    name: Python scripts syntax + smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile-check all scripts
+        run: |
+          for f in scripts/*.py; do
+            python3 -m py_compile "$f"
+          done
+
+      - name: Smoke run analyze-logs.py against fixture
+        run: |
+          mkdir -p /tmp/smoke/test-01_customer-baseline_20260101_000000
+          cp samples/reference-logs/customer-baseline-ec2-wrapper4-trimmed.log \
+             /tmp/smoke/test-01_customer-baseline_20260101_000000/ec2_wrapper4.log
+          python3 scripts/analyze-logs.py /tmp/smoke/test-01_customer-baseline_20260101_000000
+
+      - name: Smoke run compare-runs.py
+        run: python3 scripts/compare-runs.py /tmp/smoke -o /tmp/runs.json
+
+      - name: Smoke run generate-report.py
+        run: |
+          python3 scripts/generate-report.py \
+            /tmp/smoke/test-01_customer-baseline_20260101_000000/analysis.json \
+            -o /tmp/REPORT.md
+          test -s /tmp/REPORT.md
+
+  shellcheck:
+    name: shellcheck on bash scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update -y
+          sudo apt-get install -y shellcheck
+      - run: shellcheck scripts/*.sh
+
+  dashboard-static:
+    name: Dashboard static check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate dashboard files exist
+        run: |
+          test -f dashboard/index.html
+          test -f dashboard/assets/dashboard.js
+          test -f dashboard/assets/chart.umd.min.js
+          test -f dashboard/README.md
+      - name: HTML must reference our JS files
+        run: |
+          grep -q 'assets/chart.umd.min.js' dashboard/index.html
+          grep -q 'assets/dashboard.js' dashboard/index.html
+      - name: dashboard.js must use the data file
+        run: grep -q 'data/runs.json' dashboard/assets/dashboard.js
