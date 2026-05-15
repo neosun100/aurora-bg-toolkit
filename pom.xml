@@ -31,7 +31,15 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- Library versions (override via -D on command line) -->
-        <wrapper.version>2.6.0</wrapper.version>
+        <!--
+          AWS Advanced JDBC Wrapper:
+          The original HSK engagement tested 3.3.0 and 4.0.0. Those versions are
+          published only on GitHub Releases, NOT on Maven Central. We download them
+          via lib/ + ./scripts/install-local-wrapper-jars.sh into the local Maven
+          repository before building.
+          Default = 4.0.0 (the engagement's terminal version). Switch via profile.
+        -->
+        <wrapper.version>4.0.0</wrapper.version>
         <mysql.connector.version>8.0.33</mysql.connector.version>
         <hikaricp.version>4.0.3</hikaricp.version>
         <slf4j.version>2.0.13</slf4j.version>
@@ -267,6 +275,42 @@
             <id>wrapper-2.5</id>
             <properties>
                 <wrapper.version>2.5.6</wrapper.version>
+            </properties>
+        </profile>
+
+        <!-- Profile: AWS JDBC Wrapper 3.3.0 (matches original HSK engagement, EC2 wrapper3 / EKS wrapper3) -->
+        <profile>
+            <id>wrapper-3.3</id>
+            <properties>
+                <wrapper.version>3.3.0</wrapper.version>
+            </properties>
+        </profile>
+
+        <!-- Profile: AWS JDBC Wrapper 4.0.0 (default; matches HSK terminal version) -->
+        <profile>
+            <id>wrapper-4.0</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <wrapper.version>4.0.0</wrapper.version>
+            </properties>
+        </profile>
+
+        <!-- Profile: AWS JDBC Wrapper 4.0.1 (latest; bugfix release on top of 4.0.0) -->
+        <profile>
+            <id>wrapper-4.1</id>
+            <properties>
+                <wrapper.version>4.0.1</wrapper.version>
+            </properties>
+        </profile>
+
+        <!-- Profile: fall back to Maven Central 2.6.0 (no GitHub-only jars required).
+             Useful for CI environments where install-local-wrapper-jars.sh has not run. -->
+        <profile>
+            <id>wrapper-mvncentral</id>
+            <properties>
+                <wrapper.version>2.6.0</wrapper.version>
             </properties>
         </profile>
     </profiles>
