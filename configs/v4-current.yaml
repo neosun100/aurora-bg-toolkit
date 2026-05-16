@@ -28,7 +28,7 @@ jdbc:
   failureDetectionTime: 6000
   failureDetectionInterval: 1000
   failureDetectionCount: 3
-  wrapperLoggerLevel: FINEST
+  wrapperLoggerLevel: INFO
 
 hikari:
   maximumPoolSize: 10
