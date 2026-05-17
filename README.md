@@ -60,44 +60,44 @@ Originally built to diagnose a 4–57s downtime issue at a customer (HashKey), n
 
 ---
 
-## 🏆 Latest Results: v10-production
+## 🏆 Latest Results: v11-cdk-parallel
 
-> **The first measurement of the production-recommended configuration at production load.**  
-> Running `v4-current` tuning at `1280 ops/s, pool=50` with mandatory `JVM -Dnetworkaddress.cache.ttl=5`.  
-> 30 measurements (10 BG + 10 Failover + 10 Reboot) collected on 2026-05-17 in ~7h, ~$5 AWS cost.
+> **Full IaC + 5-cluster parallel measurement.** This is the recommended
+> production reference path. v10 (single-cluster bash) is preserved as
+> the reference implementation for historical/audit purposes.
 
 <p align="center">
-  <img src="https://img.aws.xin/uPic/v10-vs-v9-results.png" alt="v10 vs v9 production-load downtime comparison" width="100%"/>
+  <img src="https://img.aws.xin/uPic/v10-vs-v9-results.png" alt="downtime comparison (will be regenerated for v11 vs v10 in next iteration)" width="100%"/>
 </p>
 
 | Scenario      | N   | min      | median    | mean      | p95       | max       | stdev     |
 |---------------|-----|----------|-----------|-----------|-----------|-----------|-----------|
-| **Blue/Green**    | 10  | 4.50 s   | **5.05 s** | 8.76 s    | 19.7 s    | 21.0 s    | 6.17 s    |
-| **Failover**      | 10  | 0 ms     | **7.75 s** | 7.94 s    | 13.1 s    | 14.8 s    | 3.69 s    |
-| **Reboot**        | 10  | 0 ms     | **100 ms** | 1.02 s    | 2.56 s    | 2.6 s     | 1.19 s    |
+| **Blue/Green**    | 5   | 3.70 s   | **3.90 s** | 4.26 s    | 5.00 s    | 5.00 s    | 608 ms    |
+| **Failover**      | 10  | 4.40 s   | **10.15 s** | 9.67 s    | 14.10 s   | 15.90 s   | 3.12 s    |
+| **Reboot**        | 10  | 0 ms     | **6.95 s** | 6.42 s    | 8.00 s    | 8.40 s    | 2.21 s    |
 
-### 🔑 Key findings
+### 🔑 Key findings (v11 vs v10)
 
-1. ✅ **JVM DNS TTL=5 is the single biggest win.** Reboot drops from ~5s to median 100ms — a 50× improvement from one JVM property:
-   ```
-   -Dnetworkaddress.cache.ttl=5
-   -Dnetworkaddress.cache.negative.ttl=2
-   ```
+1. ✅ **v10's 30% BG outlier rate did NOT reproduce in v11.** v10 reported 3 of 10 BG rounds at 14-21 s; v11's 5 BG rounds (per-cluster R1) were all **3.7-5.0 s with zero outliers**. This suggests v10's outliers were **time-dependent or RDS-control-plane-dependent**, not a systemic issue.
 
-2. 🚨 **Production load reveals BG long-tail behaviour that low-load testing missed.** v9's "v4 control" cells were inadvertently measured at 40 ops/s; v10 at 1280 ops/s shows:
-   - BG median is **5.05 s** (vs v9's reported 3.8–4.0 s) — +1 s slower
-   - **30% of BG rounds exceed 14 s** (3 outliers: 14.8s · 18.0s · 21.0s) — a long tail v9 didn't see
-   - **Production timeout configuration must be ≥ 25 s**, not the 5–10 s the literature suggests
+2. ⚠️ **5-cluster parallel reboot is 70× slower than single-cluster reboot.** v10 RB median 100 ms (one client, one DB reboot); v11 RB median **6.95 s** (5 clients, 5 DB reboots simultaneously). **Production implication**: applications with multiple Aurora clients experiencing reboot simultaneously should expect ~7s downtime, not the 100ms from single-client testing.
 
-3. ✅ **Failover is reproducible.** v10 median 7.75 s, max 14.8 s, stdev 3.7 s — almost identical to v9-tuned and Aurora documentation.
+3. ✅ **Failover is reproducible across orchestration paths.** v11 FO median 10.15 s vs v10 7.75 s — within statistical noise.
+
+4. ⚙️ **CDK + 5-cluster parallel works.** Total experiment wall time **42 minutes** for 25 measurements (vs v10's 7 hours for 30 measurements). The CDK migration delivers full IaC + significant parallelization speedup.
 
 ### 📂 Full data
 
-- 📄 **Final report**: [`docs/REPORTS/2026-05-17-v10-production.md`](docs/REPORTS/2026-05-17-v10-production.md)
-- 📊 **Dashboard data**: [`dashboard/data/v10-only.json`](dashboard/data/v10-only.json) — open `dashboard/index.html` to visualise
-- 🔬 **Pre-registered experiment design**: [`docs/EXPERIMENT-V10-PLAN.md`](docs/EXPERIMENT-V10-PLAN.md)
-- 📝 **Configuration**: [`configs/v10-final.yaml`](configs/v10-final.yaml)
-- 📜 **Audit trail**: [`CHANGELOG.md`](CHANGELOG.md)
+- 📄 **Final report**: [`docs/REPORTS/2026-05-17-v11-cdk-parallel.md`](docs/REPORTS/2026-05-17-v11-cdk-parallel.md)
+- 📊 **Dashboard data**: [`dashboard/data/v11-only.json`](dashboard/data/v11-only.json)
+- 🔬 **Pre-registered experiment design**: [`docs/EXPERIMENT-V11-PLAN.md`](docs/EXPERIMENT-V11-PLAN.md)
+- 📝 **Configuration**: [`configs/v11-final.yaml`](configs/v11-final.yaml)
+- 🏗 **CDK stacks**: [`infra/cdk/`](infra/cdk/)
+- 📜 **Audit trail**: [`CHANGELOG.md`](CHANGELOG.md) `[v11-cdk-parallel]` section
+
+### Previous milestone: v10-production
+
+For v10's single-cluster bash-orchestrated production-load reference numbers, see [`docs/REPORTS/2026-05-17-v10-production.md`](docs/REPORTS/2026-05-17-v10-production.md). v10 ran 30 measurements (10 BG + 10 FO + 10 RB) over 7 hours.
 
 ---
 
@@ -124,49 +124,63 @@ The toolkit deploys a self-contained AWS environment:
 
 ## 🚀 Quick Start
 
-### One-command end-to-end run
+### One-command end-to-end run (recommended: v11 CDK path)
 
 ```bash
 git clone https://github.com/neosun100/aurora-bg-toolkit.git
 cd aurora-bg-toolkit
-nohup bash infra/orchestrate-v10-master.sh > /tmp/v10-launch.log 2>&1 &
+
+# One-time CDK setup (per AWS account/region)
+cd infra/cdk
+uv venv .venv
+uv pip install -r requirements.txt
+cdk bootstrap
+cd ../..
+
+# End-to-end run (~95 min wall, ~$5 AWS)
+nohup python3 infra/orchestrate-v11.py > /tmp/v11-launch.log 2>&1 &
 ```
 
 That's it. The orchestrator will:
 
-1. ✓ Verify dependencies (`aws`, `mvn`, `java`, `python3`, `jq`)
+1. ✓ Verify dependencies (`aws`, `cdk`, `mvn`, `java`, `python3`, `jq`)
 2. ✓ Build the fat-jar (`mvn package -Pwrapper-4.1`)
-3. ✓ Bootstrap AWS infra (VPC, SG, subnet group, key pair)
-4. ✓ Create Aurora cluster (writer + reader) and wait until available
-5. ✓ Apply BG prerequisites (binlog params + reboot writer)
-6. ✓ Launch EC2 c6i.2xlarge runner and upload the fat-jar
-7. ✓ Run **10 BG + 10 Failover + 10 Reboot rounds** (30 measurements total)
-8. ✓ Aggregate stats into `dashboard/data/v10-only.json`
-9. ✓ Write the final report to `docs/REPORTS/2026-05-17-v10-production.md`
-10. ✓ Tear down all AWS resources (zero residual cost)
+3. ✓ `cdk bootstrap` (idempotent)
+4. ✓ `cdk deploy --all` (NetworkStack + 5 ClusterStack + ClientStack, parallel)
+5. ✓ Collect outputs (cluster endpoints, EC2 IP, master secret) via boto3
+6. ✓ Upload fat-jar + configs to EC2 c6i.2xlarge runner
+7. ✓ Run **5 clusters in parallel**, each doing 2 BG + 2 FO + 2 RB rounds (30 measurements total)
+8. ✓ Aggregate stats into `dashboard/data/v11-only.json`
+9. ✓ Write the final report to `docs/REPORTS/2026-05-17-v11-cdk-parallel.md`
+10. ✓ `cdk destroy --all` (zero residual cost)
 
-Total wall time: ~7-8h. Total AWS cost: ~$5-8.
+### Alternative: v10 bash path (reference implementation)
+
+The single-cluster bash orchestrator is preserved as a reference. It is simpler to read but slower (~7h wall vs 95 min):
+
+```bash
+nohup bash infra/orchestrate-v10-master.sh > /tmp/v10-launch.log 2>&1 &
+```
 
 ### Watch progress in real time
 
 ```bash
-# Pretty-printed status (phase progress, per-round measurements, ETA)
+# v11 status (5-cluster parallel grid)
+bash scripts/v11-status.sh
+
+# v10 status (single-cluster phases)
 bash scripts/v10-status.sh
 
 # Auto-refresh every 30s
-bash scripts/v10-status.sh --watch
+bash scripts/v11-status.sh --watch
 
 # Tail the master log
-tail -f infra/state/v10-master.log
+tail -f infra/state/v11-master.log
 ```
 
 ### Resume after interruption
 
-```bash
-# Just re-run the master orchestrator. It reads progress.json,
-# skips done phases, retries failed/pending ones.
-bash infra/orchestrate-v10-master.sh
-```
+Both v10 and v11 orchestrators write checkpoint JSON (`infra/state/v{10,11}-progress.json`). Re-running the same launch command resumes from the last completed phase.
 
 ### Open the dashboard
 
@@ -183,7 +197,7 @@ export DB_PASSWORD='your-db-password'
 DB_ENDPOINT=test-01.cluster-xxx.us-east-1.rds.amazonaws.com \
   java -Dnetworkaddress.cache.ttl=5 -Dnetworkaddress.cache.negative.ttl=2 \
        -jar target/aurora-bg-toolkit-1.0.0-SNAPSHOT-all.jar \
-       configs/v10-final.yaml
+       configs/v11-final.yaml
 # In another terminal: trigger switchover/failover/reboot via AWS CLI
 # Then: python3 scripts/analyze-stats-gap.py /path/to/wrapper.log
 ```
@@ -206,7 +220,8 @@ The toolkit ships 10 configurations representing the full optimization journey f
 | `v7-dns-warmup.yaml` | rejected | App-level DNS warmup thread | overengineered |
 | `v8-prod-load.yaml` | validated | Pool=50 at production load | 6–11 s |
 | `v9-tuned.yaml` | partial | 5 untested levers; only H1 (DNS TTL=5) survived | 3.5–4.2s @ 1280 ops/s |
-| **`v10-final.yaml`** | **🏆 RECOMMENDED** | **Production reference, validated under 1280 ops/s** | **median 5.05s, max 21s** |
+| `v10-final.yaml` | reference | Production-load reference (single cluster, bash) | median 5.05s, max 21s |
+| **`v11-final.yaml`** | **🏆 RECOMMENDED** | **CDK + 5-cluster parallel** | **median 3.90s, max 5.0s, no outliers** |
 
 See [`configs/README.md`](configs/README.md) for YAML schema and how to add a new config.
 

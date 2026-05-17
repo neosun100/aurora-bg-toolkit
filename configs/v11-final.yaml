@@ -1,0 +1,70 @@
+# V11-FINAL — Production-grade reference, fully IaC (CDK) + 5-cluster parallel.
+#
+# This is identical to v10-final at the workload/JDBC/JVM level — what changed
+# is the surrounding infrastructure path:
+#
+#   v10-final.yaml: bash orchestrator + manual aws-cli teardown
+#   v11-final.yaml: CDK (Python) orchestrator + parallel 5-cluster execution
+#
+# The numbers should match v10 within statistical noise. If they don't, that
+# itself is a finding worth reporting.
+#
+# Required JVM flags when running this config (same as v10):
+#   -Dnetworkaddress.cache.ttl=5
+#   -Dnetworkaddress.cache.negative.ttl=2
+#   --add-opens java.base/java.lang=ALL-UNNAMED
+#   --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+#   -Xmx2g  (lower than v10 -Xmx4g because EC2 c6i.2xlarge runs 5 java processes)
+#
+name: v11-final
+description: Production-grade CDK-native reference. v10 tuning + 5-cluster parallel via CDK + Python orchestrator.
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+jdbc:
+  # Same plugin chain as v4 / v10 (validated by v9 H6-out-of-scope assessment)
+  wrapperPlugins:
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 50
+  # Default bgConnectTimeoutMs (30000) and bgIncreasedMs (1000) — v9 H3 proved
+  # that lowering these REGRESSES Failover. Keep defaults.
+  connectTimeout: 1000
+  socketTimeout: 3000
+  failureDetectionTime: 6000
+  failureDetectionInterval: 1000
+  failureDetectionCount: 3
+  wrapperLoggerLevel: INFO
+
+hikari:
+  # Production-grade pool sizing
+  maximumPoolSize: 50
+  minimumIdle: 50
+  initializationFailTimeout: -1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  # Production load: ~1280 ops/s
+  threads: 64
+  intervalMs: 50
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: true
+    delayMs: 25
+  # 10Hz STATS reporter — gives ±100ms precision (vs ±500ms for 1Hz)
+  statsReporterHz: 10

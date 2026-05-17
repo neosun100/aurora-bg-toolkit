@@ -64,3 +64,8 @@ e2e-results/
 *.swp
 *.swo
 infra/state/
+
+# CDK build artifacts
+infra/cdk/cdk.out/
+infra/cdk/.venv/
+infra/cdk/cdk.context.json
