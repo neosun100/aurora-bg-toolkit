@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aurora BG Toolkit — Downtime Dashboard</title>
+<title>Aurora BG Toolkit — v10 Production Dashboard</title>
 <style>
   :root {
     --bg: #000;
     --panel: #0d0d0f;
     --panel-2: #14141a;
+    --panel-3: #1a1a20;
     --fg: #f5f5f7;
     --dim: #86868b;
     --accent: #2997ff;
@@ -16,21 +17,33 @@
     --red: #ff453a;
     --orange: #ff9f0a;
     --purple: #bf5af2;
+    --pink: #ff2d92;
+    --cyan: #5ac8fa;
     --border: #1f1f24;
   }
   * { box-sizing: border-box; }
   html, body {
-    margin: 0;
-    padding: 0;
+    margin: 0; padding: 0;
     background: var(--bg);
     color: var(--fg);
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "DM Sans",
-                 system-ui, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "DM Sans", system-ui, sans-serif;
     font-feature-settings: "ss01", "cv11";
   }
   .wrap { max-width: 1280px; margin: 0 auto; padding: clamp(2rem, 5vw, 4rem); }
 
-  header { margin-bottom: 4rem; }
+  header { margin-bottom: 3rem; }
+  .badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(48, 209, 88, 0.15);
+    color: var(--green);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
   h1 {
     font-size: clamp(2rem, 5vw, 3.5rem);
     font-weight: 700;
@@ -43,31 +56,12 @@
   }
   header p { color: var(--dim); font-size: 1.05rem; margin: 0; }
 
-  .hero {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1rem;
-    margin-bottom: 3rem;
-  }
-  .hero .card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 1.5rem 1.75rem;
-  }
-  .hero .label { color: var(--dim); font-size: 0.85rem; letter-spacing: 0.04em; text-transform: uppercase; }
-  .hero .num   { font-size: 2.5rem; font-weight: 700; margin-top: 0.4rem; letter-spacing: -0.02em; }
-  .hero .num.green  { color: var(--green); }
-  .hero .num.red    { color: var(--red); }
-  .hero .num.orange { color: var(--orange); }
-  .hero .sub { color: var(--dim); font-size: 0.9rem; margin-top: 0.3rem; }
-
   .panel {
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 14px;
     padding: 1.75rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
   }
   .panel h2 {
     font-size: 1.4rem;
@@ -75,59 +69,159 @@
     font-weight: 600;
     letter-spacing: -0.01em;
   }
-  .panel h3 { font-size: 1.05rem; color: var(--dim); font-weight: 500; margin: 1.25rem 0 0.5rem; }
-  .panel p.lead { color: var(--dim); margin: -0.5rem 0 1rem; }
-  canvas { width: 100% !important; height: auto !important; max-height: 420px; }
+  .panel h2 .sub { color: var(--dim); font-weight: 400; font-size: 0.9rem; margin-left: 0.5rem; }
+  .panel p.lead { color: var(--dim); margin: -0.5rem 0 1.25rem; font-size: 0.95rem; }
 
+  /* Hero strip */
+  .hero {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .hero .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem 1.75rem;
+    text-align: center;
+  }
+  .hero .card .scenario-label {
+    color: var(--dim);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .hero .card .num {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0.4rem 0 0.2rem;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .hero .card .num.green { color: var(--green); }
+  .hero .card .num.orange { color: var(--orange); }
+  .hero .card .num.cyan { color: var(--cyan); }
+  .hero .card .meta { color: var(--dim); font-size: 0.85rem; }
+
+  /* Highlights table */
+  .highlights {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.75rem;
+  }
+  .highlight {
+    background: var(--panel-2);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+  .highlight .name { color: var(--dim); font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; }
+  .highlight .value { color: var(--accent); font-weight: 600; font-size: 1.05rem; margin: 0.25rem 0 0.35rem; font-variant-numeric: tabular-nums; }
+  .highlight .rationale { color: var(--dim); font-size: 0.8rem; line-height: 1.4; }
+
+  details summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    user-select: none;
+  }
+  details summary:hover { color: var(--green); }
+  details pre {
+    background: var(--panel-2);
+    padding: 1rem;
+    border-radius: 8px;
+    overflow: auto;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--dim);
+    margin-top: 0.75rem;
+  }
+
+  /* Stats table */
   table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.9rem;
   }
-  th, td { padding: 0.7rem 0.85rem; text-align: left; border-bottom: 1px solid var(--border); }
-  th { color: var(--dim); font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; font-size: 0.75rem; }
+  th, td {
+    padding: 0.75rem 0.85rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    color: var(--dim);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+  }
   tr:last-child td { border-bottom: none; }
-  td.num { font-variant-numeric: tabular-nums; text-align: right; font-feature-settings: "tnum"; }
-  td.cfg { color: var(--accent); font-weight: 500; }
+  td.num { font-variant-numeric: tabular-nums; text-align: right; }
+  td.scenario { font-weight: 600; color: var(--accent); }
 
+  /* Box plot SVG container */
+  .boxplot-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  @media (max-width: 800px) {
+    .boxplot-container { grid-template-columns: 1fr; }
+    .hero { grid-template-columns: 1fr; }
+  }
+  .boxplot-cell {
+    background: var(--panel-2);
+    border-radius: 10px;
+    padding: 1rem;
+  }
+  .boxplot-cell h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .boxplot-cell .sublabel {
+    color: var(--dim);
+    font-size: 0.78rem;
+    margin-bottom: 0.75rem;
+  }
+  .boxplot-cell svg { width: 100%; height: 220px; display: block; }
+
+  /* Pill */
   .pill {
     display: inline-block;
     padding: 0.15rem 0.55rem;
     border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0.02em;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
-  .pill.good { background: rgba(48, 209, 88, 0.15); color: var(--green); }
-  .pill.bad  { background: rgba(255, 69, 58, 0.15); color: var(--red); }
-  .pill.warn { background: rgba(255, 159, 10, 0.15); color: var(--orange); }
+  .pill.good { background: rgba(48,209,88,0.15); color: var(--green); }
+  .pill.warn { background: rgba(255,159,10,0.15); color: var(--orange); }
+  .pill.bad  { background: rgba(255,69,58,0.15); color: var(--red); }
 
+  /* Glow */
   .glow {
     position: absolute;
     width: 600px; height: 600px;
     border-radius: 50%;
     filter: blur(150px);
-    opacity: 0.18;
+    opacity: 0.15;
     pointer-events: none;
     z-index: -1;
   }
-  .glow.cyan   { background: var(--accent); top: -100px; right: -100px; }
+  .glow.cyan { background: var(--accent); top: -100px; right: -100px; }
   .glow.purple { background: var(--purple); bottom: -200px; left: -150px; }
 
-  .empty {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: var(--dim);
-  }
-  .empty code {
-    background: var(--panel-2);
-    padding: 0.15rem 0.4rem;
-    border-radius: 4px;
-    color: var(--fg);
-  }
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--dim); }
+  .empty code { background: var(--panel-2); padding: 0.15rem 0.4rem; border-radius: 4px; color: var(--fg); }
 
   footer {
-    margin-top: 4rem;
+    margin-top: 3rem;
     color: var(--dim);
     font-size: 0.85rem;
     text-align: center;
@@ -136,10 +230,18 @@
   }
   footer a { color: var(--accent); text-decoration: none; }
 
-  @media (max-width: 600px) {
-    .hero { grid-template-columns: 1fr 1fr; }
-    .hero .num { font-size: 1.8rem; }
+  .progress-strip {
+    display: flex;
+    gap: 4px;
+    margin-top: 0.75rem;
   }
+  .progress-strip .dot {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--panel-3);
+  }
+  .progress-strip .dot.done { background: var(--green); }
 </style>
 </head>
 <body>
@@ -148,89 +250,88 @@
 
 <div class="wrap">
   <header>
+    <span class="badge">v10 · Production reference</span>
     <h1>Aurora BG Toolkit</h1>
-    <p>Blue/Green switchover, Failover, and Reboot downtime, measured at the application layer.</p>
+    <p>Production-grade reference configuration. Single config, single load, three scenarios. <span id="genAt"></span></p>
   </header>
 
   <div id="empty" class="panel empty" style="display:none">
-    <h2>No data loaded yet</h2>
-    <p>Run the toolkit and aggregate the results:</p>
-    <p><code>python3 scripts/compare-runs.py e2e-results/ -o dashboard/data/runs.json</code></p>
-    <p>Then refresh this page.</p>
+    <h2>No v10 data yet</h2>
+    <p>Run the orchestrator first:</p>
+    <p><code>nohup bash infra/orchestrate-v10-master.sh &gt; /tmp/v10-launch.log 2&gt;&amp;1 &amp;</code></p>
+    <p>Or check progress: <code>bash scripts/v10-status.sh</code></p>
   </div>
 
   <div id="content" style="display:none">
+    <!-- Hero: 3 big numbers, one per scenario -->
     <div class="hero" id="hero"></div>
 
+    <!-- v10 configuration panel -->
     <div class="panel">
-      <h2>Downtime by configuration</h2>
-      <p class="lead">Maximum write-side downtime per round, grouped by configuration.</p>
-      <canvas id="byConfigChart"></canvas>
+      <h2>Configuration <span class="sub">configs/v10-final.yaml</span></h2>
+      <p class="lead">The exact parameters used to produce these numbers. Reproducible bit-for-bit.</p>
+      <div class="highlights" id="highlights"></div>
+      <details>
+        <summary>Show full YAML</summary>
+        <pre id="yamlBox"></pre>
+      </details>
     </div>
 
+    <!-- Box plots -->
+    <div class="panel">
+      <h2>Downtime distribution (box plot)</h2>
+      <p class="lead">Each box: min · Q1 · median · Q3 · max. Whiskers extend to min/max; vertical line is median; dots are individual round measurements.</p>
+      <div class="boxplot-container" id="boxplots"></div>
+    </div>
+
+    <!-- Statistics table -->
     <div class="panel">
       <h2>Statistics</h2>
-      <p class="lead">Per-configuration aggregate statistics. Lower is better; smaller spread (max − min) means more predictable.</p>
-      <table id="statsTable"><thead><tr>
-        <th>Configuration</th>
-        <th class="num">N</th>
-        <th class="num">Min</th>
-        <th class="num">Median</th>
-        <th class="num">Mean</th>
-        <th class="num">P95</th>
-        <th class="num">Max</th>
-        <th class="num">Stdev</th>
-      </tr></thead><tbody></tbody></table>
+      <p class="lead">Aggregated across all rounds for each scenario. Lower is better; small stdev means predictable.</p>
+      <table id="statsTable">
+        <thead><tr>
+          <th>Scenario</th>
+          <th class="num">N</th>
+          <th class="num">Min</th>
+          <th class="num">Q1</th>
+          <th class="num">Median</th>
+          <th class="num">Mean</th>
+          <th class="num">Q3</th>
+          <th class="num">P95</th>
+          <th class="num">Max</th>
+          <th class="num">Stdev</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
     </div>
 
+    <!-- Per-round details -->
     <div class="panel">
-      <h2>Platform × Wrapper combo</h2>
-      <p class="lead">EC2 vs EKS, wrapper 3.3.0 vs 4.0.0 — does the platform / wrapper matter?</p>
-      <canvas id="comboChart"></canvas>
-    </div>
-
-    <div class="panel">
-      <h2>Per-run detail</h2>
-      <p class="lead">All runs with their max write/read downtime windows.</p>
-      <table id="runsTable"><thead><tr>
-        <th>Run ID</th>
-        <th>Config</th>
-        <th>Scenario</th>
-        <th class="num">Round</th>
-        <th class="num">↓write max</th>
-        <th class="num">↓read max</th>
-        <th>Verdict</th>
-      </tr></thead><tbody></tbody></table>
-    </div>
-
-    <div class="panel">
-      <h2>Why customer-baseline hangs 30+ seconds</h2>
-      <p class="lead">A short anatomy of the original problem.</p>
-      <pre style="overflow:auto;font-size:0.85rem;color:var(--dim);line-height:1.6;background:var(--panel-2);padding:1rem;border-radius:8px">
-T+0      Switchover triggered
-T+10s    PREPARATION (RDS internal)        ← not optimisable
-T+13s    bg plugin SuspendConnectRouting   ← DOWNTIME STARTS
-T+17s    SuspendConnectRouting released    ← race with DNS update
-         ┌── DNS already on Green IP  → instant recovery (~4s total)
-         └── DNS still on stale Blue IP
-              ├── customer baseline (no connectTimeout):
-              │     TCP SYN hangs 30s, kernel retries
-              │     → 35-57s total downtime
-              └── v4 (connectTimeout=1000ms):
-                    1s timeout, retry succeeds
-                    → 5-7s total downtime
-      </pre>
+      <h2>Per-round measurements</h2>
+      <p class="lead">Every round, exact value, with raw log directory for traceability.</p>
+      <details open>
+        <summary id="roundsToggle">Show all 30 rounds</summary>
+        <table id="roundsTable">
+          <thead><tr>
+            <th>Scenario</th>
+            <th class="num">Round</th>
+            <th class="num">↓write max</th>
+            <th class="num">↓read max</th>
+            <th>Wrapper</th>
+            <th>Run ID</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </details>
     </div>
   </div>
 
   <footer>
-    Aurora BG Toolkit ·
-    <a href="https://github.com/neosun100/aurora-bg-toolkit">github.com/neosun100/aurora-bg-toolkit</a> ·
-    Generated <span id="genAt">—</span>
+    Aurora BG Toolkit · v10-production ·
+    <a href="https://github.com/neosun100/aurora-bg-toolkit">github.com/neosun100/aurora-bg-toolkit</a>
   </footer>
 </div>
 
-<script src="assets/chart.umd.min.js"></script>
-<script src="assets/dashboard.js"></script>
+<script src="assets/dashboard-v10.js?v=20260517-v10-1"></script>
 </body>
 </html>

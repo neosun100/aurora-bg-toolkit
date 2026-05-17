@@ -1,0 +1,11 @@
+{
+  "app": "python3 app.py",
+  "watch": {
+    "include": ["**"],
+    "exclude": ["README.md", "cdk*.json", ".venv/**", "**/__pycache__"]
+  },
+  "context": {
+    "@aws-cdk/aws-rds:databaseProxyUniqueResourceName": true,
+    "@aws-cdk/core:enableStackNameDuplicates": true
+  }
+}

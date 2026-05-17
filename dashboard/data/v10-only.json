@@ -1,0 +1,527 @@
+{
+  "schema": "v10-only-1",
+  "experiment": "v10-production",
+  "generatedAt": "2026-05-17T06:24:47Z",
+  "config": {
+    "name": "v10-final",
+    "yamlPath": "configs/v10-final.yaml",
+    "yaml": "# V10-FINAL \u2014 Production-grade reference configuration.\n#\n# Genesis: v9 final report (2026-05-16) recommended `v4-current + JVM DNS TTL=5`\n# as the production sweet spot. However, audit on 2026-05-17 revealed that\n# v9 experiment's v4 control cells actually ran a low-load workload\n# (4 threads \u00d7 100ms \u2248 40 ops/s, pool=10), NOT the production load\n# (64 threads \u00d7 50ms \u2248 1280 ops/s, pool=50) the report claimed.\n#\n# v10 corrects this gap: it IS v4-current's tuning, but pinned at production\n# load, with DNS TTL=5 explicitly required (set by JVM startup flag), and\n# 10 Hz STATS reporter for high-precision downtime measurement.\n#\n# This is the FIRST and ONLY config tested in the v10 experiment, run as\n# 1 cluster \u00d7 1 cell \u00d7 3 scenarios \u00d7 10 rounds = 30 measurements.\n#\n# Required JVM flags when running this config:\n#   -Dnetworkaddress.cache.ttl=5\n#   -Dnetworkaddress.cache.negative.ttl=2\n#   --add-opens java.base/java.lang=ALL-UNNAMED\n#   --add-opens java.base/java.lang.reflect=ALL-UNNAMED\n#   -Xmx4g\n#\n# Expected results (informed by v9 partial data + extrapolation):\n#   - BG switchover:   3.5\u20134.5 s (bg plugin's 4 s SuspendConnectRouting floor)\n#   - Failover:        5\u20138 s    (Aurora writer-reader role swap)\n#   - Reboot:          0\u20130.5 s  (DNS TTL=5 eliminates stale-IP wait)\n#\nname: v10-final\ndescription: Production-grade reference. v4-current's tuning + production load + DNS TTL=5 + 10Hz STATS.\n\ndatabase:\n  port: 4488\n  database: demo\n  tableTemplate: \"table_${CONFIG}_${SUFFIX}\"\n  user: admin\n\njdbc:\n  # Same plugin chain as v4 (this combo is validated by v9 H6-out-of-scope assessment)\n  wrapperPlugins:\n    - failover2\n    - efm2\n    - bg\n  bgHighMs: 50\n  # Default bgConnectTimeoutMs (30000) and bgIncreasedMs (1000) \u2014 v9 H3 proved\n  # that lowering these REGRESSES Failover. Do NOT add bgConnectTimeoutMs or\n  # bgIncreasedMs override here.\n  connectTimeout: 1000\n  socketTimeout: 3000\n  failureDetectionTime: 6000\n  failureDetectionInterval: 1000\n  failureDetectionCount: 3\n  wrapperLoggerLevel: INFO    # FINEST floods disk under 1280 ops/s\n\nhikari:\n  # Production-grade pool sizing\n  maximumPoolSize: 50\n  minimumIdle: 50\n  initializationFailTimeout: -1\n  connectionTimeoutMs: 5000\n  idleTimeoutMs: 30000\n  maxLifetimeMs: 60000        # Default; v9 H5 (300000) showed no benefit\n  keepaliveTimeMs: 60000\n  validationTimeoutMs: 5000\n  # Keep init/test queries \u2014 v9 H2 (removing them) showed no benefit either way\n  connectionInitSql: \"select 1 from dual\"\n  connectionTestQuery: \"SELECT 1\"\n  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException\n\nworkload:\n  # Production load: ~1280 ops/s\n  threads: 64\n  intervalMs: 50\n  weights:\n    read: 9\n    insert: 2\n    update: 1\n  retry:\n    enabled: true\n    delayMs: 25\n  # 10Hz STATS reporter \u2014 gives \u00b1100ms precision (vs \u00b1500ms for 1Hz)\n  statsReporterHz: 10\n",
+    "highlights": [
+      {
+        "name": "JVM DNS TTL",
+        "value": "5 s",
+        "rationale": "v9 H1 winner \u2014 drops Reboot 5s \u2192 0s"
+      },
+      {
+        "name": "connectTimeout",
+        "value": "1000 ms",
+        "rationale": "v4-current; v9 H3 (lower) regresses Failover"
+      },
+      {
+        "name": "socketTimeout",
+        "value": "3000 ms",
+        "rationale": "v4-current; balanced query timeout"
+      },
+      {
+        "name": "failureDetectionTime",
+        "value": "6000 ms",
+        "rationale": "v4-current; tighter than wrapper default (30s)"
+      },
+      {
+        "name": "failureDetectionInterval",
+        "value": "1000 ms",
+        "rationale": "v4-current"
+      },
+      {
+        "name": "failureDetectionCount",
+        "value": "3",
+        "rationale": "v4-current; avoids false positives"
+      },
+      {
+        "name": "HikariCP pool max/min",
+        "value": "50 / 50",
+        "rationale": "production-grade; was 10/10 in low-load v4"
+      },
+      {
+        "name": "HikariCP maxLifetime",
+        "value": "60 s",
+        "rationale": "v4-current; v9 H5 (300s) showed no benefit"
+      },
+      {
+        "name": "connectionInitSql",
+        "value": "SELECT 1",
+        "rationale": "v4-current; v9 H2 (null) showed no benefit"
+      },
+      {
+        "name": "Workload load",
+        "value": "1280 ops/s",
+        "rationale": "64 threads \u00d7 50ms (production)"
+      },
+      {
+        "name": "STATS reporter",
+        "value": "10 Hz",
+        "rationale": "\u00b1100ms precision (vs 1Hz \u00b1500ms)"
+      },
+      {
+        "name": "wrapper version",
+        "value": "4.0.1",
+        "rationale": "latest stable; v9 H4 says no diff vs 4.0.0"
+      }
+    ]
+  },
+  "scenarios": {
+    "blue-green": {
+      "scenario": "blue-green",
+      "rounds": [
+        {
+          "round": 1,
+          "writeMaxMs": 4812,
+          "readMaxMs": 4729,
+          "runId": "test-v10_v10-final_v10bg_r1",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-bg-1_20260516_231821/test-v10_v10-final",
+          "statsCount": 3392,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 2,
+          "writeMaxMs": 5101,
+          "readMaxMs": 5101,
+          "runId": "test-v10_v10-final_v10bg_r2",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-bg-2_20260516_235749/test-v10_v10-final",
+          "statsCount": 3383,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 3,
+          "writeMaxMs": 4706,
+          "readMaxMs": 4706,
+          "runId": "test-v10_v10-final_v10bg_r3",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-bg-3_20260517_003640/test-v10_v10-final",
+          "statsCount": 3383,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 4,
+          "writeMaxMs": 18000,
+          "readMaxMs": 18000,
+          "runId": "test-v10_v10-final_v10bg_r4",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-bg-4_20260517_011531/test-v10_v10-final",
+          "statsCount": 3383,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 5,
+          "writeMaxMs": 5200,
+          "readMaxMs": 5200,
+          "runId": "test-v10_v10-final_v10bg_r5",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-bg-5_20260517_015456/test-v10_v10-final",
+          "statsCount": 3383,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 6,
+          "writeMaxMs": 5000,
+          "readMaxMs": 5000,
+          "runId": "test-v10_v10-final_v10bg_r6",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-bg-6_20260517_023526/test-v10_v10-final",
+          "statsCount": 3383,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 7,
+          "writeMaxMs": 14802,
+          "readMaxMs": 14700,
+          "runId": "test-v10_v10-final_v10bg_r7",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-bg-7_20260517_031756/test-v10_v10-final",
+          "statsCount": 3383,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 8,
+          "writeMaxMs": 4500,
+          "readMaxMs": 4500,
+          "runId": "test-v10_v10-final_v10bg_r8",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-bg-8_20260517_035619/test-v10_v10-final",
+          "statsCount": 3381,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 9,
+          "writeMaxMs": 4500,
+          "readMaxMs": 4500,
+          "runId": "test-v10_v10-final_v10bg_r9",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-bg-9_20260517_043625/test-v10_v10-final",
+          "statsCount": 3387,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 10,
+          "writeMaxMs": 21000,
+          "readMaxMs": 20905,
+          "runId": "test-v10_v10-final_v10bg_r10",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-bg-10_20260517_051727/test-v10_v10-final",
+          "statsCount": 3384,
+          "detectedPeriodMs": 100
+        }
+      ],
+      "samples": [
+        4500,
+        4500,
+        14802,
+        5000,
+        5200,
+        18000,
+        4706,
+        5101,
+        4812,
+        21000
+      ],
+      "readSamples": [
+        4500,
+        4500,
+        14700,
+        5000,
+        5200,
+        18000,
+        4706,
+        5101,
+        4729,
+        20905
+      ],
+      "writeStats": {
+        "n": 10,
+        "min": 4500,
+        "max": 21000,
+        "mean": 8762,
+        "median": 5050,
+        "p95": 19649,
+        "stdev": 6166,
+        "q1": 4732,
+        "q3": 12401
+      },
+      "readStats": {
+        "n": 10,
+        "min": 4500,
+        "max": 20905,
+        "mean": 8734,
+        "median": 5050,
+        "p95": 19597,
+        "stdev": 6142,
+        "q1": 4711,
+        "q3": 12325
+      }
+    },
+    "failover": {
+      "scenario": "failover",
+      "rounds": [
+        {
+          "round": 1,
+          "writeMaxMs": 0,
+          "readMaxMs": 0,
+          "runId": "test-v10_v10-final_v10fo_r1",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-failover-1_20260516_225150/test-v10_v10-final",
+          "statsCount": 420,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 2,
+          "writeMaxMs": 14800,
+          "readMaxMs": 14800,
+          "runId": "test-v10_v10-final_v10fo_r2",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-failover-2_20260517_052447/test-v10_v10-final",
+          "statsCount": 1871,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 3,
+          "writeMaxMs": 6600,
+          "readMaxMs": 6600,
+          "runId": "test-v10_v10-final_v10fo_r3",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-failover-3_20260517_052812/test-v10_v10-final",
+          "statsCount": 1874,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 4,
+          "writeMaxMs": 6200,
+          "readMaxMs": 6200,
+          "runId": "test-v10_v10-final_v10fo_r4",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-failover-4_20260517_053137/test-v10_v10-final",
+          "statsCount": 1871,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 5,
+          "writeMaxMs": 10100,
+          "readMaxMs": 10000,
+          "runId": "test-v10_v10-final_v10fo_r5",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-failover-5_20260517_053503/test-v10_v10-final",
+          "statsCount": 1870,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 6,
+          "writeMaxMs": 5700,
+          "readMaxMs": 5700,
+          "runId": "test-v10_v10-final_v10fo_r6",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-failover-6_20260517_053827/test-v10_v10-final",
+          "statsCount": 1874,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 7,
+          "writeMaxMs": 7900,
+          "readMaxMs": 7700,
+          "runId": "test-v10_v10-final_v10fo_r7",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-failover-7_20260517_054153/test-v10_v10-final",
+          "statsCount": 1873,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 8,
+          "writeMaxMs": 9500,
+          "readMaxMs": 9500,
+          "runId": "test-v10_v10-final_v10fo_r8",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-failover-8_20260517_054518/test-v10_v10-final",
+          "statsCount": 1870,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 9,
+          "writeMaxMs": 11000,
+          "readMaxMs": 11000,
+          "runId": "test-v10_v10-final_v10fo_r9",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-failover-9_20260517_054843/test-v10_v10-final",
+          "statsCount": 1871,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 10,
+          "writeMaxMs": 7600,
+          "readMaxMs": 7600,
+          "runId": "test-v10_v10-final_v10fo_r10",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-failover-10_20260517_055208/test-v10_v10-final",
+          "statsCount": 1868,
+          "detectedPeriodMs": 100
+        }
+      ],
+      "samples": [
+        11000,
+        9500,
+        7900,
+        5700,
+        10100,
+        6200,
+        6600,
+        14800,
+        0,
+        7600
+      ],
+      "readSamples": [
+        11000,
+        9500,
+        7700,
+        5700,
+        10000,
+        6200,
+        6600,
+        14800,
+        0,
+        7600
+      ],
+      "writeStats": {
+        "n": 10,
+        "min": 0,
+        "max": 14800,
+        "mean": 7940,
+        "median": 7750,
+        "p95": 13089,
+        "stdev": 3694,
+        "q1": 6300,
+        "q3": 9950
+      },
+      "readStats": {
+        "n": 10,
+        "min": 0,
+        "max": 14800,
+        "mean": 7910,
+        "median": 7650,
+        "p95": 13089,
+        "stdev": 3689,
+        "q1": 6300,
+        "q3": 9875
+      }
+    },
+    "reboot": {
+      "scenario": "reboot",
+      "rounds": [
+        {
+          "round": 1,
+          "writeMaxMs": 0,
+          "readMaxMs": 0,
+          "runId": "test-v10_v10-final_v10rb_r1",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-reboot-1_20260517_055533/test-v10_v10-final",
+          "statsCount": 1568,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 2,
+          "writeMaxMs": 100,
+          "readMaxMs": 0,
+          "runId": "test-v10_v10-final_v10rb_r2",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-reboot-2_20260517_055826/test-v10_v10-final",
+          "statsCount": 1572,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 3,
+          "writeMaxMs": 2500,
+          "readMaxMs": 2500,
+          "runId": "test-v10_v10-final_v10rb_r3",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-reboot-3_20260517_060120/test-v10_v10-final",
+          "statsCount": 1572,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 4,
+          "writeMaxMs": 2600,
+          "readMaxMs": 2600,
+          "runId": "test-v10_v10-final_v10rb_r4",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-reboot-4_20260517_060414/test-v10_v10-final",
+          "statsCount": 1589,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 5,
+          "writeMaxMs": 0,
+          "readMaxMs": 0,
+          "runId": "test-v10_v10-final_v10rb_r5",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-reboot-5_20260517_060710/test-v10_v10-final",
+          "statsCount": 1573,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 6,
+          "writeMaxMs": 100,
+          "readMaxMs": 0,
+          "runId": "test-v10_v10-final_v10rb_r6",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-reboot-6_20260517_061004/test-v10_v10-final",
+          "statsCount": 1571,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 7,
+          "writeMaxMs": 2400,
+          "readMaxMs": 2500,
+          "runId": "test-v10_v10-final_v10rb_r7",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-reboot-7_20260517_061258/test-v10_v10-final",
+          "statsCount": 1660,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 8,
+          "writeMaxMs": 100,
+          "readMaxMs": 0,
+          "runId": "test-v10_v10-final_v10rb_r8",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-reboot-8_20260517_061602/test-v10_v10-final",
+          "statsCount": 1605,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 9,
+          "writeMaxMs": 0,
+          "readMaxMs": 0,
+          "runId": "test-v10_v10-final_v10rb_r9",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-reboot-9_20260517_061859/test-v10_v10-final",
+          "statsCount": 1571,
+          "detectedPeriodMs": 100
+        },
+        {
+          "round": 10,
+          "writeMaxMs": 2400,
+          "readMaxMs": 2500,
+          "runId": "test-v10_v10-final_v10rb_r10",
+          "wrapperJar": "abt-w401.jar",
+          "directory": "e2e-results/v10-reboot-10_20260517_062153/test-v10_v10-final",
+          "statsCount": 1571,
+          "detectedPeriodMs": 100
+        }
+      ],
+      "samples": [
+        0,
+        100,
+        2400,
+        100,
+        0,
+        2600,
+        2500,
+        100,
+        0,
+        2400
+      ],
+      "readSamples": [
+        0,
+        0,
+        2500,
+        0,
+        0,
+        2600,
+        2500,
+        0,
+        0,
+        2500
+      ],
+      "writeStats": {
+        "n": 10,
+        "min": 0,
+        "max": 2600,
+        "mean": 1020,
+        "median": 100,
+        "p95": 2555,
+        "stdev": 1189,
+        "q1": 25,
+        "q3": 2400
+      },
+      "readStats": {
+        "n": 10,
+        "min": 0,
+        "max": 2600,
+        "mean": 1010,
+        "median": 0,
+        "p95": 2555,
+        "stdev": 1237,
+        "q1": 0,
+        "q3": 2500
+      }
+    }
+  }
+}

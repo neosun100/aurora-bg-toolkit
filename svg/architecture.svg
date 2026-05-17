@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif">
+  <style>
+    .bg{fill:#0a0a0f}
+    .panel{fill:#14141a;stroke:#2a2a35;stroke-width:1.5}
+    .vpc{fill:none;stroke:#5e5ce6;stroke-width:2;stroke-dasharray:8,4}
+    .ec2{fill:#1a1a25;stroke:#ff9f0a;stroke-width:2}
+    .aurora{fill:#1a2540;stroke:#2997ff;stroke-width:2}
+    .green-cluster{fill:#1a3025;stroke:#30d158;stroke-width:2}
+    .secret{fill:#251a25;stroke:#bf5af2;stroke-width:2}
+    .label{fill:#f5f5f7;font-weight:600}
+    .sublabel{fill:#86868b;font-size:11px}
+    .arrow-trigger{stroke:#ff453a;stroke-width:2.5;fill:none;marker-end:url(#arr-red)}
+    .arrow-data{stroke:#30d158;stroke-width:2;fill:none;marker-end:url(#arr-green);stroke-dasharray:5,3}
+    .arrow-conn{stroke:#2997ff;stroke-width:2;fill:none;marker-end:url(#arr-blue)}
+    .text-trigger{fill:#ff453a;font-size:11px;font-weight:600}
+    .text-data{fill:#30d158;font-size:11px}
+    .text-conn{fill:#2997ff;font-size:11px}
+    .cap{fill:#86868b;font-size:11px;letter-spacing:0.05em}
+    .h2{fill:#f5f5f7;font-size:18px;font-weight:700}
+    .num{fill:#5ac8fa;font-weight:700;font-family:monospace}
+  </style>
+  <defs>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ff453a"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#30d158"/>
+    </marker>
+    <marker id="arr-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2997ff"/>
+    </marker>
+    <linearGradient id="grad-title" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2997ff"/>
+      <stop offset="100%" stop-color="#bf5af2"/>
+    </linearGradient>
+  </defs>
+
+  <rect class="bg" width="1200" height="720"/>
+
+  <!-- Title -->
+  <text x="40" y="48" font-size="26" font-weight="700" fill="url(#grad-title)">Aurora BG Toolkit — System Architecture</text>
+  <text x="40" y="72" class="sublabel" font-size="13">A test harness for measuring Aurora MySQL Blue/Green / Failover / Reboot downtime under production load</text>
+
+  <!-- VPC border -->
+  <rect class="vpc" x="40" y="100" width="1120" height="560" rx="14"/>
+  <text x="60" y="125" class="cap" font-weight="600">AWS VPC · us-east-1 · single AZ</text>
+
+  <!-- Operator (left, outside) -->
+  <g>
+    <circle cx="100" cy="395" r="32" fill="#1a1a25" stroke="#5ac8fa" stroke-width="2"/>
+    <text x="100" y="402" font-size="22" text-anchor="middle">👤</text>
+    <text x="100" y="445" class="label" font-size="13" text-anchor="middle">Operator</text>
+    <text x="100" y="462" class="sublabel" text-anchor="middle">orchestrator</text>
+  </g>
+
+  <!-- EC2 client (left in VPC) -->
+  <g>
+    <rect class="ec2" x="200" y="240" width="270" height="280" rx="10"/>
+    <text x="335" y="266" class="label" font-size="14" text-anchor="middle">EC2 c6i.2xlarge</text>
+    <text x="335" y="282" class="sublabel" text-anchor="middle">8 vCPU · 16 GiB · Amazon Linux 2023</text>
+
+    <rect x="222" y="304" width="226" height="46" rx="6" fill="#0d0d12" stroke="#ff9f0a" stroke-width="1.2"/>
+    <text x="335" y="324" fill="#ff9f0a" font-size="13" font-weight="600" text-anchor="middle">Java 17 · BgDowntimeTest</text>
+    <text x="335" y="341" class="sublabel" text-anchor="middle">configs/v10-final.yaml</text>
+
+    <rect x="222" y="364" width="226" height="46" rx="6" fill="#0d0d12" stroke="#ff9f0a" stroke-width="1.2"/>
+    <text x="335" y="384" fill="#ff9f0a" font-size="13" font-weight="600" text-anchor="middle">aws-advanced-jdbc-wrapper</text>
+    <text x="335" y="401" class="sublabel" text-anchor="middle">[failover2, efm2, bg] · v4.0.1</text>
+
+    <rect x="222" y="424" width="226" height="46" rx="6" fill="#0d0d12" stroke="#ff9f0a" stroke-width="1.2"/>
+    <text x="335" y="444" fill="#ff9f0a" font-size="13" font-weight="600" text-anchor="middle">HikariCP pool</text>
+    <text x="335" y="461" class="sublabel" text-anchor="middle">max=50 · minIdle=50 · maxLifetime=60s</text>
+
+    <text x="335" y="498" class="sublabel" text-anchor="middle">JVM: -Dnetworkaddress.cache.ttl=5</text>
+  </g>
+
+  <!-- Aurora cluster (center) -->
+  <g>
+    <rect class="aurora" x="540" y="170" width="320" height="240" rx="10"/>
+    <text x="700" y="196" class="label" font-size="14" text-anchor="middle">Aurora MySQL 3.10.4</text>
+    <text x="700" y="212" class="sublabel" text-anchor="middle">aurora-iopt1 · port 4488 · cluster: test-v10</text>
+
+    <rect x="565" y="234" width="270" height="68" rx="8" fill="#0a1828" stroke="#2997ff" stroke-width="1.5"/>
+    <text x="580" y="256" fill="#2997ff" font-size="13" font-weight="700">WRITER  ·  db.r7g.large</text>
+    <text x="580" y="276" class="sublabel">test-v10-writer</text>
+    <text x="580" y="292" class="sublabel">cluster endpoint</text>
+
+    <rect x="565" y="318" width="270" height="68" rx="8" fill="#0a1828" stroke="#2997ff" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <text x="580" y="340" fill="#2997ff" font-size="13" font-weight="700">READER  ·  db.t3.medium</text>
+    <text x="580" y="360" class="sublabel">test-v10-reader</text>
+    <text x="580" y="376" class="sublabel">reader endpoint</text>
+  </g>
+
+  <!-- BG green cluster (right) -->
+  <g>
+    <rect class="green-cluster" x="900" y="170" width="240" height="240" rx="10"/>
+    <text x="1020" y="196" class="label" font-size="13" text-anchor="middle" fill="#30d158">Blue/Green Deployment</text>
+    <text x="1020" y="212" class="sublabel" text-anchor="middle">green clone (per round)</text>
+
+    <rect x="922" y="234" width="196" height="60" rx="8" fill="#0c1f12" stroke="#30d158" stroke-width="1.5"/>
+    <text x="1020" y="254" fill="#30d158" font-size="13" font-weight="700" text-anchor="middle">GREEN WRITER</text>
+    <text x="1020" y="276" class="sublabel" text-anchor="middle">test-v10-green-1-writer</text>
+
+    <rect x="922" y="312" width="196" height="60" rx="8" fill="#0c1f12" stroke="#30d158" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <text x="1020" y="332" fill="#30d158" font-size="13" font-weight="700" text-anchor="middle">GREEN READER</text>
+    <text x="1020" y="354" class="sublabel" text-anchor="middle">test-v10-green-1-reader</text>
+  </g>
+
+  <!-- Secrets Manager (bottom-center) -->
+  <g>
+    <rect class="secret" x="540" y="450" width="200" height="80" rx="10"/>
+    <text x="640" y="476" class="label" font-size="13" text-anchor="middle">Secrets Manager</text>
+    <text x="640" y="495" class="sublabel" text-anchor="middle">master credentials</text>
+    <text x="640" y="512" class="sublabel" text-anchor="middle" fill="#bf5af2" font-weight="600">⚠ disabled in v10</text>
+  </g>
+
+  <!-- Cluster Parameter Group (bottom-right) -->
+  <g>
+    <rect class="panel" x="780" y="450" width="220" height="80" rx="10" stroke="#bf5af2" stroke-width="1.5"/>
+    <text x="890" y="476" class="label" font-size="13" text-anchor="middle">Cluster Parameter Group</text>
+    <text x="890" y="495" class="sublabel" text-anchor="middle">abt-aurora-mysql8-bg</text>
+    <text x="890" y="512" class="sublabel" text-anchor="middle">binlog ON for BG prereqs</text>
+  </g>
+
+  <!-- IAM Role / Instance Profile -->
+  <g>
+    <rect class="panel" x="200" y="555" width="270" height="68" rx="10"/>
+    <text x="335" y="580" class="label" font-size="13" text-anchor="middle">IAM Role · Instance Profile</text>
+    <text x="335" y="600" class="sublabel" text-anchor="middle">rds:* + secretsmanager:GetSecretValue</text>
+    <text x="335" y="615" class="sublabel" text-anchor="middle">+ rds:SwitchoverBlueGreenDeployment</text>
+  </g>
+
+  <!-- Connection: EC2 -> writer (JDBC) -->
+  <path class="arrow-conn" d="M 470 380 Q 510 380 540 290"/>
+  <text x="475" y="368" class="text-conn">JDBC port 4488</text>
+
+  <!-- Connection: EC2 -> reader (also via wrapper) -->
+  <path class="arrow-conn" d="M 470 410 Q 510 410 540 350" stroke-dasharray="3,3"/>
+
+  <!-- Trigger: operator -> RDS API -->
+  <path class="arrow-trigger" d="M 132 395 L 195 395"/>
+  <text x="140" y="382" class="text-trigger">RDS API</text>
+
+  <!-- Trigger arrows from EC2 to actions -->
+  <g transform="translate(540, 605)">
+    <rect width="600" height="68" rx="10" fill="#1a0f0f" stroke="#ff453a" stroke-width="1.5"/>
+    <text x="20" y="22" class="text-trigger" font-size="13" font-weight="700">3 test triggers (RDS API)</text>
+    <text x="20" y="46" class="sublabel" font-size="12">▸ <tspan fill="#ff453a" font-weight="600">switchover-blue-green-deployment</tspan> &#160; ▸ <tspan fill="#ff453a" font-weight="600">failover-db-cluster</tspan> &#160; ▸ <tspan fill="#ff453a" font-weight="600">reboot-db-instance</tspan></text>
+    <text x="20" y="62" class="sublabel" font-size="11">measure write/read 0-throughput windows from STATS lines (10 Hz precision)</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="600" y="700" class="sublabel" font-size="11" text-anchor="middle">github.com/neosun100/aurora-bg-toolkit · v10-production · 2026-05-17</text>
+</svg>

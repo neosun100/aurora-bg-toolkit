@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif">
+  <style>
+    .bg{fill:#0a0a0f}
+    .cap{fill:#86868b;font-size:11px;letter-spacing:0.05em}
+    .pyramid-tier{stroke-width:1.5}
+    .label{fill:#fff;font-weight:700;font-size:14px}
+    .sublabel{fill:#86868b;font-size:11px}
+    .num{fill:#5ac8fa;font-weight:700;font-family:monospace}
+  </style>
+  <defs>
+    <linearGradient id="grad-title" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2997ff"/>
+      <stop offset="100%" stop-color="#bf5af2"/>
+    </linearGradient>
+    <linearGradient id="grad-e2e" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ff2d92"/>
+      <stop offset="100%" stop-color="#bf5af2"/>
+    </linearGradient>
+    <linearGradient id="grad-reg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ff9f0a"/>
+      <stop offset="100%" stop-color="#ffd60a"/>
+    </linearGradient>
+    <linearGradient id="grad-int" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#30d158"/>
+      <stop offset="100%" stop-color="#5ac8fa"/>
+    </linearGradient>
+    <linearGradient id="grad-unit" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5ac8fa"/>
+      <stop offset="100%" stop-color="#2997ff"/>
+    </linearGradient>
+  </defs>
+
+  <rect class="bg" width="1200" height="720"/>
+
+  <!-- Title -->
+  <text x="40" y="48" font-size="26" font-weight="700" fill="url(#grad-title)">Test Pyramid</text>
+  <text x="40" y="72" class="cap" font-size="13">unit + integration + regression + E2E · the full ladder · 50+ tests across 4 layers</text>
+
+  <!-- Pyramid centered around x=320 (left half), descriptions on right (x>=580) -->
+
+  <!-- E2E (top, narrowest) -->
+  <polygon points="280,120 360,120 360,180 280,180" fill="url(#grad-e2e)" fill-opacity="0.92" class="pyramid-tier" stroke="#ff2d92"/>
+  <text x="320" y="156" class="label" text-anchor="middle">E2E</text>
+
+  <!-- Regression -->
+  <polygon points="240,180 400,180 400,250 240,250" fill="url(#grad-reg)" fill-opacity="0.92" class="pyramid-tier" stroke="#ff9f0a"/>
+  <text x="320" y="220" class="label" text-anchor="middle">Regression</text>
+
+  <!-- Integration -->
+  <polygon points="190,250 450,250 450,350 190,350" fill="url(#grad-int)" fill-opacity="0.92" class="pyramid-tier" stroke="#30d158"/>
+  <text x="320" y="305" class="label" text-anchor="middle">Integration</text>
+
+  <!-- Unit (bottom, widest) -->
+  <polygon points="120,350 520,350 520,490 120,490" fill="url(#grad-unit)" fill-opacity="0.92" class="pyramid-tier" stroke="#2997ff"/>
+  <text x="320" y="425" class="label" text-anchor="middle" font-size="16">Unit</text>
+
+  <!-- Connector line from each tier to its description on the right -->
+  <line x1="365" y1="148" x2="555" y2="148" stroke="#ff2d92" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="405" y1="215" x2="555" y2="215" stroke="#ff9f0a" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="455" y1="298" x2="555" y2="298" stroke="#30d158" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="525" y1="420" x2="555" y2="420" stroke="#2997ff" stroke-width="1" stroke-dasharray="3,3"/>
+
+  <!-- E2E description -->
+  <g transform="translate(560, 120)">
+    <rect width="600" height="80" rx="8" fill="#1a0f1a" stroke="#ff2d92" stroke-width="1.2"/>
+    <text x="20" y="24" font-size="14" fill="#ff2d92" font-weight="700">E2E — real Aurora cluster, real load</text>
+    <text x="20" y="44" class="sublabel">10 BG + 10 Failover + 10 Reboot rounds @ production load (1280 ops/s, pool=50)</text>
+    <text x="20" y="60" class="sublabel">infra/orchestrate-v10-master.sh · ~7-8h · ~$5-8 AWS cost · gives the real numbers</text>
+    <text x="20" y="74" class="sublabel">dataset → docs/REPORTS/2026-05-17-v10-production.md + dashboard/data/v10-only.json</text>
+  </g>
+
+  <!-- Regression description -->
+  <g transform="translate(560, 210)">
+    <rect width="600" height="60" rx="8" fill="#1a1408" stroke="#ff9f0a" stroke-width="1.2"/>
+    <text x="20" y="24" font-size="14" fill="#ff9f0a" font-weight="700">Regression — replay historical logs</text>
+    <text x="20" y="42" class="sublabel">samples/reference-logs/customer-baseline-ec2-wrapper4-trimmed.log</text>
+    <text x="20" y="56" class="sublabel">guarantees LogParser still reproduces every number from past reports</text>
+  </g>
+
+  <!-- Integration description -->
+  <g transform="translate(560, 280)">
+    <rect width="600" height="60" rx="8" fill="#082014" stroke="#30d158" stroke-width="1.2"/>
+    <text x="20" y="24" font-size="14" fill="#30d158" font-weight="700">Integration — Testcontainers MySQL</text>
+    <text x="20" y="42" class="sublabel">JDBC + HikariCP + retry path against real MySQL container</text>
+    <text x="20" y="56" class="sublabel">runs in CI · no AWS · no cost</text>
+  </g>
+
+  <!-- Unit description -->
+  <g transform="translate(560, 350)">
+    <rect width="600" height="160" rx="8" fill="#08152a" stroke="#2997ff" stroke-width="1.2"/>
+    <text x="20" y="24" font-size="14" fill="#2997ff" font-weight="700">Unit — 42+ tests · pure JUnit 5</text>
+    <g font-size="11" fill="#86868b">
+      <text x="20" y="50"><tspan fill="#5ac8fa" font-weight="600">ConfigLoaderEdgeCaseTest</tspan> — parse YAML, defaults, types</text>
+      <text x="20" y="68"><tspan fill="#5ac8fa" font-weight="600">JdbcUrlBuilderTest</tspan> — URL synthesis with timeouts + plugin chain</text>
+      <text x="20" y="86"><tspan fill="#5ac8fa" font-weight="600">LogParserTest</tspan> — timestamp + indexed parse modes</text>
+      <text x="20" y="104"><tspan fill="#5ac8fa" font-weight="600">ShippedConfigsParseTest</tspan> — every yaml in configs/ parses</text>
+      <text x="20" y="122"><tspan fill="#5ac8fa" font-weight="600">StatsTest</tspan> — median, p95, stdev, percentile correctness</text>
+      <text x="20" y="140"><tspan fill="#5ac8fa" font-weight="600">WeightedOperationPickerTest</tspan> — R/I/U weight distribution</text>
+    </g>
+  </g>
+
+  <!-- Bottom: tradeoffs row -->
+  <g transform="translate(40, 540)">
+    <rect width="1120" height="120" rx="14" fill="#14141a" stroke="#2a2a35" stroke-width="1.5"/>
+    <text x="20" y="32" class="cap" font-weight="600">Per-layer tradeoffs (cost · speed · feedback)</text>
+
+    <!-- 4 columns -->
+    <g transform="translate(20, 50)">
+      <text x="0" y="14" font-size="13" fill="#2997ff" font-weight="700">Unit</text>
+      <text x="0" y="34" class="sublabel">~0.1s · $0</text>
+      <text x="0" y="50" class="sublabel">runs every save</text>
+    </g>
+
+    <g transform="translate(290, 50)">
+      <text x="0" y="14" font-size="13" fill="#30d158" font-weight="700">Integration</text>
+      <text x="0" y="34" class="sublabel">~10s · $0</text>
+      <text x="0" y="50" class="sublabel">runs in CI per PR</text>
+    </g>
+
+    <g transform="translate(560, 50)">
+      <text x="0" y="14" font-size="13" fill="#ff9f0a" font-weight="700">Regression</text>
+      <text x="0" y="34" class="sublabel">~5s · $0</text>
+      <text x="0" y="50" class="sublabel">catches LogParser drift</text>
+    </g>
+
+    <g transform="translate(830, 50)">
+      <text x="0" y="14" font-size="13" fill="#ff2d92" font-weight="700">E2E</text>
+      <text x="0" y="34" class="sublabel">~7-8h · ~$5-8</text>
+      <text x="0" y="50" class="sublabel">gives real-world numbers (= v10)</text>
+    </g>
+  </g>
+
+  <!-- Footer -->
+  <text x="600" y="700" class="cap" text-anchor="middle">infra/orchestrate-v10-master.sh · src/test/java/...</text>
+</svg>

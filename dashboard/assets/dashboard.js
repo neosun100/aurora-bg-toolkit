@@ -1,23 +1,39 @@
 // Dashboard logic — loads data/runs.json (produced by compare-runs.py)
 // and renders charts + tables. Vanilla JS, no build step.
 
-const COLORS = {
-  baseline: '#ff453a',
-  v1:       '#ff9f0a',
-  v2:       '#ffd60a',
-  v3:       '#a98cf2',
-  v4:       '#30d158',
-  v5:       '#2997ff',
-  v6:       '#bf5af2',
-  v7:       '#5e5ce6',
-  default:  '#86868b',
-};
+// Color palette — Apple-style dark theme. Each config gets a distinct hue.
+// Order matters: more-specific prefixes must come BEFORE less-specific ones.
+const COLOR_RULES = [
+  // customer-baseline-* → alarm red (the problem we're solving)
+  { prefix: 'customer',           color: '#ff453a' },
+  { prefix: 'baseline',           color: '#ff453a' },
+  // v9 = the hot experimental config — magenta/pink, highest visibility
+  { prefix: 'v9',                 color: '#ff2d92' },
+  // v8 production-load baseline — cyan
+  { prefix: 'v8',                 color: '#5ac8fa' },
+  // v7 DNS warmup — indigo
+  { prefix: 'v7',                 color: '#5e5ce6' },
+  // v6 aggressive — purple
+  { prefix: 'v6',                 color: '#bf5af2' },
+  // v5 experimental — blue
+  { prefix: 'v5',                 color: '#2997ff' },
+  // v4-current = production recommendation — green (good)
+  { prefix: 'v4',                 color: '#30d158' },
+  // v3 — light lavender
+  { prefix: 'v3',                 color: '#a98cf2' },
+  // v2 — yellow
+  { prefix: 'v2',                 color: '#ffd60a' },
+  // v1 — orange
+  { prefix: 'v1',                 color: '#ff9f0a' },
+];
 
 function colorFor(cfg) {
-  for (const [key, c] of Object.entries(COLORS)) {
-    if (cfg.startsWith(key)) return c;
+  if (!cfg) return '#86868b';
+  const lc = String(cfg).toLowerCase();
+  for (const { prefix, color } of COLOR_RULES) {
+    if (lc.startsWith(prefix)) return color;
   }
-  return COLORS.default;
+  return '#86868b';
 }
 
 function fmtMs(ms) {
@@ -102,15 +118,20 @@ function renderByConfigChart(data) {
 
   // Render each config's samples as a separate dataset on the same chart,
   // using sample index as x-axis. Helps spot outliers.
-  const datasets = cfgs.map(cfg => ({
-    label: cfg,
-    data: (samplesByCfg[cfg] || []).map((v, i) => ({ x: i + 1, y: v / 1000 })),
-    borderColor: colorFor(cfg),
-    backgroundColor: colorFor(cfg),
-    pointRadius: 5,
-    pointHoverRadius: 7,
-    showLine: false,
-  }));
+  const datasets = cfgs.map(cfg => {
+    const c = colorFor(cfg);
+    return {
+      label: cfg,
+      data: (samplesByCfg[cfg] || []).map((v, i) => ({ x: i + 1, y: v / 1000 })),
+      borderColor: c,
+      backgroundColor: c + 'cc',     // 80% opacity, helps overlapping points blend
+      pointRadius: 7,
+      pointHoverRadius: 10,
+      pointBorderColor: '#000',
+      pointBorderWidth: 1.5,
+      showLine: false,
+    };
+  });
 
   new Chart(document.getElementById('byConfigChart'), {
     type: 'scatter',

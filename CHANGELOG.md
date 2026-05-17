@@ -5,6 +5,114 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [post-experiment-audit] - 2026-05-17
+
+> Post-mortem audit trail. No code or config changes. Verifies test
+> completeness, cleans up residual AWS metadata that the original teardown
+> missed.
+
+### Verified — test coverage completeness
+
+Cross-checked every measurement directory against the v9 plan. All
+120 cells are present and correctly tagged:
+
+| Scenario | Rounds | Cells/round | Total | Status |
+|---|---|---|---|---|
+| Blue/Green | 1–10 | 4 (v4@4.0.0, v4@4.0.1, v9@4.0.0, v9@4.0.1) | 40 | ✅ all present |
+| Failover | 1–10 | 4 | 40 | ✅ all present |
+| Reboot | 1–10 | 4 | 40 | ✅ all present |
+| **Total** | | | **120** | **✅ complete** |
+
+Each cell's `meta.json` contains valid `scenario`, `config`, `round`,
+`runId`, and `wrapperJar` fields (sampled rounds 1 and 10 across all
+three scenarios — fields well-formed).
+
+The `e2e-results/` directory also contains some empty-shell directories
+(e.g. `v9-bg-10_135337`, `v9-failover-{6..10}_142347~142847`) — these
+are orchestrator pre-flight retry stubs from when a BG was not yet
+`AVAILABLE` or a cluster pg was not yet `in-sync`. They contain no
+data and do NOT affect the 120-cell tally above. Real data lives in
+the directories with 4 sub-directories each.
+
+### Verified — final report location
+
+The authoritative output of the v9 experiment is:
+
+- **`docs/REPORTS/2026-05-16-v9-final-report.md`** — 120 measurements,
+  hypothesis verdicts, production recommendation, methodology notes.
+
+Supporting documents (also unchanged):
+
+- `docs/EXPERIMENT-V9-PLAN.md` — pre-registered design (acceptance gates 1-15)
+- `docs/REPORTS/2026-05-15-e2e-results.md` — round 1 (low-load, v1-v7)
+- `docs/REPORTS/2026-05-16-e2e-results-v2.md` — round 2 (production-load v2/v4/v5/v8)
+- `CHANGELOG.md` `[v9-experiment]` section below — 1-page summary
+
+### Verified — no further v9 iteration justified
+
+Per the final report, the **3.5–4.2 s BG floor is set by the bg plugin's
+hardcoded 4 s SuspendConnectRouting**, not by client-side configuration.
+All 5 client-side hypotheses have been adjudicated. Future experiments
+are only justified when one of these external triggers happens:
+
+- New `aws-advanced-jdbc-wrapper` major version (>4.0.1) is released
+- Customer upgrades Aurora MySQL engine version (currently locked at 3.10.4)
+- Architecture-level change accepted (dual-write / shadow-writer pattern)
+
+### Removed — residual AWS Blue/Green deployment metadata
+
+The original `99-teardown.sh` deleted clusters/instances/EC2 but left
+behind 47 `SWITCHOVER_COMPLETED` BG metadata records (cost-free, AWS
+auto-purges after ~7 days, but visually noisy). All 47 explicitly
+deleted via `delete-blue-green-deployment` (parallel × 6 concurrent;
+total wall time 26 s).
+
+Scope of removal:
+
+- `bg-test-{02,03,04,05}-*` × 47 — all v9-experiment BG deployments
+  (4 clusters × ~12 rounds each, including pre-experiment setup BGs)
+
+Explicitly retained (not part of v9 scope):
+
+- `aurora-bg-test-{deployment,medium,heavy}` × 3 — older experiment
+  from 2026-02-05, predates this toolkit
+- `bg-test-01-{145315,171713}` × 2 — from a 2026-05-15 round-1
+  pre-flight that used cluster `test-01`, also predates v9
+
+### Verified — AWS account cost-resource state
+
+Confirmed empty (zero ongoing cost from this toolkit):
+
+| Resource type | Count | Notes |
+|---|---|---|
+| Aurora DB clusters | 0 | All `test-0{1..5}` destroyed |
+| Aurora DB instances | 0 | Including all `-old*` cleanup |
+| Manual snapshots (test-*) | 0 | None taken |
+| Automated snapshots (test-*) | 0 | Auto-deleted with clusters |
+| EC2 c6i.2xlarge runner | 0 | Destroyed |
+| Aurora-related secrets | 0 | Destroyed |
+| Available (orphan) EBS volumes | 0 | None |
+| BG deployments (`SWITCHOVER_COMPLETED`) | 5 | All pre-v9 (see above) |
+
+### Retained — zero-cost control-plane objects
+
+Three RDS control-plane objects survive teardown. All are billing-free
+and represent ~5 minutes of saved setup time if a future experiment
+re-runs the same matrix:
+
+- Cluster parameter group `aurora-bg-test-params` (binlog ON for BG)
+- DB subnet group `aurora-bg-test-subnet-group` (vpc-04bdf8e5af4f70ca0)
+- Security group `sg-02b1fc3e2caaeb30f` (`aurora-bg-test-sg`)
+
+If a clean-slate teardown is desired in the future, delete these three
+objects; `00-bootstrap.sh` + `05-enable-bg-prereqs.sh` will recreate them.
+
+### Audit performed by
+
+`kiro-cli` agent session, 2026-05-17 05:25–05:35 SGT, using
+`aws --profile jiasunm-neo --region us-east-1` against account active
+at audit time. Local working tree clean before and after audit.
+
 ## [v9-experiment] - 2026-05-16
 
 ### Added

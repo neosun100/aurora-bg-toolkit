@@ -1,0 +1,253 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 880" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif">
+  <style>
+    .bg{fill:#0a0a0f}
+    .phase-setup{fill:#1a1a25;stroke:#5e5ce6;stroke-width:1.5}
+    .phase-test{fill:#1a2030;stroke:#2997ff;stroke-width:1.5}
+    .phase-wrapup{fill:#1a2520;stroke:#30d158;stroke-width:1.5}
+    .phase-name{fill:#f5f5f7;font-weight:700;font-size:13px}
+    .phase-dur{fill:#86868b;font-size:11px}
+    .arrow{stroke:#5ac8fa;stroke-width:2.5;fill:none;marker-end:url(#arr)}
+    .h2{fill:#f5f5f7;font-size:18px;font-weight:700}
+    .cap{fill:#86868b;font-size:11px;letter-spacing:0.05em}
+    .num{fill:#5ac8fa;font-weight:700;font-family:monospace}
+    .checkpoint{fill:#251a25;stroke:#bf5af2;stroke-width:1.5}
+  </style>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5ac8fa"/>
+    </marker>
+    <linearGradient id="grad-title" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2997ff"/>
+      <stop offset="100%" stop-color="#bf5af2"/>
+    </linearGradient>
+  </defs>
+
+  <rect class="bg" width="1200" height="880"/>
+
+  <!-- Title -->
+  <text x="40" y="48" font-size="26" font-weight="700" fill="url(#grad-title)">v10 Experiment Lifecycle</text>
+  <text x="40" y="72" class="cap" font-size="13">39 phases · resumable via progress.json checkpoint · ~7-8h end-to-end · ~$5-8 AWS cost</text>
+
+  <!-- Setup row -->
+  <text x="40" y="118" class="cap" font-weight="600">SETUP  (one-shot, ~12 min total)</text>
+
+  <g>
+    <rect class="phase-setup" x="40" y="135" width="160" height="80" rx="8"/>
+    <text x="120" y="158" class="phase-name" text-anchor="middle">PRECHECK</text>
+    <text x="120" y="180" class="phase-dur" text-anchor="middle">~6 s</text>
+    <text x="120" y="196" class="phase-dur" text-anchor="middle">verify deps + AWS auth</text>
+  </g>
+  <path class="arrow" d="M 200 175 L 232 175"/>
+  <g>
+    <rect class="phase-setup" x="232" y="135" width="160" height="80" rx="8"/>
+    <text x="312" y="158" class="phase-name" text-anchor="middle">BUILD</text>
+    <text x="312" y="180" class="phase-dur" text-anchor="middle">~30 s</text>
+    <text x="312" y="196" class="phase-dur" text-anchor="middle">mvn package (wrapper 4.0.1)</text>
+  </g>
+  <path class="arrow" d="M 392 175 L 424 175"/>
+  <g>
+    <rect class="phase-setup" x="424" y="135" width="160" height="80" rx="8"/>
+    <text x="504" y="158" class="phase-name" text-anchor="middle">BOOTSTRAP</text>
+    <text x="504" y="180" class="phase-dur" text-anchor="middle">~30 s</text>
+    <text x="504" y="196" class="phase-dur" text-anchor="middle">VPC + SG + subnet + key</text>
+  </g>
+  <path class="arrow" d="M 584 175 L 616 175"/>
+  <g>
+    <rect class="phase-setup" x="616" y="135" width="170" height="80" rx="8"/>
+    <text x="701" y="158" class="phase-name" text-anchor="middle">CLUSTER_CREATE</text>
+    <text x="701" y="180" class="phase-dur" text-anchor="middle">~8 min</text>
+    <text x="701" y="196" class="phase-dur" text-anchor="middle">Aurora writer + reader</text>
+  </g>
+  <path class="arrow" d="M 786 175 L 818 175"/>
+  <g>
+    <rect class="phase-setup" x="818" y="135" width="170" height="80" rx="8"/>
+    <text x="903" y="158" class="phase-name" text-anchor="middle">BG_PREREQS</text>
+    <text x="903" y="180" class="phase-dur" text-anchor="middle">~80 s</text>
+    <text x="903" y="196" class="phase-dur" text-anchor="middle">binlog params + reboot</text>
+  </g>
+  <path class="arrow" d="M 988 175 L 1020 175"/>
+  <g>
+    <rect class="phase-setup" x="1020" y="135" width="160" height="80" rx="8"/>
+    <text x="1100" y="158" class="phase-name" text-anchor="middle">EC2_SETUP</text>
+    <text x="1100" y="180" class="phase-dur" text-anchor="middle">~60 s</text>
+    <text x="1100" y="196" class="phase-dur" text-anchor="middle">c6i.2xlarge + jar upload</text>
+  </g>
+
+  <!-- Down arrow to test phase -->
+  <path class="arrow" d="M 600 215 L 600 270"/>
+  <text x="612" y="248" class="cap">test phase</text>
+
+  <!-- Test scenarios block -->
+  <text x="40" y="298" class="cap" font-weight="600">MEASUREMENTS  (30 rounds, ~6 hours)</text>
+
+  <!-- Blue/Green section -->
+  <g>
+    <rect class="phase-test" x="40" y="318" width="375" height="200" rx="10"/>
+    <text x="60" y="346" fill="#2997ff" font-size="16" font-weight="700">Blue/Green × 10 rounds</text>
+    <text x="60" y="365" class="phase-dur">~28 min/round (BG provisioning is the bottleneck)</text>
+
+    <g transform="translate(60, 380)">
+      <rect width="80" height="32" rx="6" fill="#0d0d12" stroke="#2997ff" stroke-width="1"/>
+      <text x="40" y="21" class="phase-dur" text-anchor="middle" fill="#f5f5f7">in-sync ✓</text>
+    </g>
+    <path class="arrow" d="M 145 396 L 168 396" stroke-width="1.5"/>
+    <g transform="translate(168, 380)">
+      <rect width="80" height="32" rx="6" fill="#0d0d12" stroke="#2997ff" stroke-width="1"/>
+      <text x="40" y="21" class="phase-dur" text-anchor="middle" fill="#f5f5f7">create BG</text>
+    </g>
+    <path class="arrow" d="M 253 396 L 276 396" stroke-width="1.5"/>
+    <g transform="translate(276, 380)">
+      <rect width="100" height="32" rx="6" fill="#0d0d12" stroke="#2997ff" stroke-width="1"/>
+      <text x="50" y="21" class="phase-dur" text-anchor="middle" fill="#f5f5f7">wait AVAILABLE</text>
+    </g>
+
+    <g transform="translate(60, 422)">
+      <rect width="100" height="32" rx="6" fill="#0d0d12" stroke="#2997ff" stroke-width="1"/>
+      <text x="50" y="21" class="phase-dur" text-anchor="middle" fill="#f5f5f7">start client</text>
+    </g>
+    <path class="arrow" d="M 165 438 L 188 438" stroke-width="1.5"/>
+    <g transform="translate(188, 422)">
+      <rect width="80" height="32" rx="6" fill="#0d0d12" stroke="#2997ff" stroke-width="1"/>
+      <text x="40" y="21" class="phase-dur" text-anchor="middle" fill="#f5f5f7">warm-up 90s</text>
+    </g>
+    <path class="arrow" d="M 273 438 L 296 438" stroke-width="1.5"/>
+    <g transform="translate(296, 422)">
+      <rect width="100" height="32" rx="6" fill="#0d0d12" stroke="#ff453a" stroke-width="1"/>
+      <text x="50" y="21" class="phase-dur" text-anchor="middle" fill="#ff453a" font-weight="600">switchover ⚡</text>
+    </g>
+
+    <g transform="translate(60, 464)">
+      <rect width="100" height="32" rx="6" fill="#0d0d12" stroke="#2997ff" stroke-width="1"/>
+      <text x="50" y="21" class="phase-dur" text-anchor="middle" fill="#f5f5f7">stabilise 4min</text>
+    </g>
+    <path class="arrow" d="M 165 480 L 188 480" stroke-width="1.5"/>
+    <g transform="translate(188, 464)">
+      <rect width="100" height="32" rx="6" fill="#0d0d12" stroke="#30d158" stroke-width="1"/>
+      <text x="50" y="21" class="phase-dur" text-anchor="middle" fill="#30d158">analyze gap</text>
+    </g>
+    <path class="arrow" d="M 293 480 L 316 480" stroke-width="1.5"/>
+    <g transform="translate(316, 464)">
+      <rect width="80" height="32" rx="6" fill="#0d0d12" stroke="#bf5af2" stroke-width="1"/>
+      <text x="40" y="21" class="phase-dur" text-anchor="middle" fill="#bf5af2">checkpoint</text>
+    </g>
+  </g>
+
+  <!-- Failover section -->
+  <g>
+    <rect class="phase-test" x="430" y="318" width="375" height="200" rx="10"/>
+    <text x="450" y="346" fill="#ff9f0a" font-size="16" font-weight="700">Failover × 10 rounds</text>
+    <text x="450" y="365" class="phase-dur">~3 min/round</text>
+
+    <g transform="translate(450, 388)">
+      <rect width="100" height="32" rx="6" fill="#0d0d12" stroke="#2997ff" stroke-width="1"/>
+      <text x="50" y="21" class="phase-dur" text-anchor="middle" fill="#f5f5f7">start client</text>
+    </g>
+    <path class="arrow" d="M 555 404 L 578 404" stroke-width="1.5"/>
+    <g transform="translate(578, 388)">
+      <rect width="80" height="32" rx="6" fill="#0d0d12" stroke="#2997ff" stroke-width="1"/>
+      <text x="40" y="21" class="phase-dur" text-anchor="middle" fill="#f5f5f7">warm-up 60s</text>
+    </g>
+    <path class="arrow" d="M 663 404 L 686 404" stroke-width="1.5"/>
+    <g transform="translate(686, 388)">
+      <rect width="100" height="32" rx="6" fill="#0d0d12" stroke="#ff453a" stroke-width="1"/>
+      <text x="50" y="21" class="phase-dur" text-anchor="middle" fill="#ff453a" font-weight="600">failover ⚡</text>
+    </g>
+
+    <g transform="translate(450, 432)">
+      <rect width="100" height="32" rx="6" fill="#0d0d12" stroke="#2997ff" stroke-width="1"/>
+      <text x="50" y="21" class="phase-dur" text-anchor="middle" fill="#f5f5f7">stabilise 2min</text>
+    </g>
+    <path class="arrow" d="M 555 448 L 578 448" stroke-width="1.5"/>
+    <g transform="translate(578, 432)">
+      <rect width="100" height="32" rx="6" fill="#0d0d12" stroke="#30d158" stroke-width="1"/>
+      <text x="50" y="21" class="phase-dur" text-anchor="middle" fill="#30d158">analyze gap</text>
+    </g>
+    <path class="arrow" d="M 683 448 L 706 448" stroke-width="1.5"/>
+    <g transform="translate(706, 432)">
+      <rect width="80" height="32" rx="6" fill="#0d0d12" stroke="#bf5af2" stroke-width="1"/>
+      <text x="40" y="21" class="phase-dur" text-anchor="middle" fill="#bf5af2">checkpoint</text>
+    </g>
+  </g>
+
+  <!-- Reboot section -->
+  <g>
+    <rect class="phase-test" x="820" y="318" width="360" height="200" rx="10"/>
+    <text x="840" y="346" fill="#5ac8fa" font-size="16" font-weight="700">Reboot × 10 rounds</text>
+    <text x="840" y="365" class="phase-dur">~3 min/round</text>
+
+    <g transform="translate(840, 388)">
+      <rect width="100" height="32" rx="6" fill="#0d0d12" stroke="#2997ff" stroke-width="1"/>
+      <text x="50" y="21" class="phase-dur" text-anchor="middle" fill="#f5f5f7">start client</text>
+    </g>
+    <path class="arrow" d="M 945 404 L 968 404" stroke-width="1.5"/>
+    <g transform="translate(968, 388)">
+      <rect width="80" height="32" rx="6" fill="#0d0d12" stroke="#2997ff" stroke-width="1"/>
+      <text x="40" y="21" class="phase-dur" text-anchor="middle" fill="#f5f5f7">warm-up 60s</text>
+    </g>
+    <path class="arrow" d="M 1053 404 L 1076 404" stroke-width="1.5"/>
+    <g transform="translate(1076, 388)">
+      <rect width="84" height="32" rx="6" fill="#0d0d12" stroke="#ff453a" stroke-width="1"/>
+      <text x="42" y="21" class="phase-dur" text-anchor="middle" fill="#ff453a" font-weight="600">reboot ⚡</text>
+    </g>
+
+    <g transform="translate(840, 432)">
+      <rect width="100" height="32" rx="6" fill="#0d0d12" stroke="#2997ff" stroke-width="1"/>
+      <text x="50" y="21" class="phase-dur" text-anchor="middle" fill="#f5f5f7">stabilise 90s</text>
+    </g>
+    <path class="arrow" d="M 945 448 L 968 448" stroke-width="1.5"/>
+    <g transform="translate(968, 432)">
+      <rect width="100" height="32" rx="6" fill="#0d0d12" stroke="#30d158" stroke-width="1"/>
+      <text x="50" y="21" class="phase-dur" text-anchor="middle" fill="#30d158">analyze gap</text>
+    </g>
+    <path class="arrow" d="M 1073 448 L 1096 448" stroke-width="1.5"/>
+    <g transform="translate(1096, 432)">
+      <rect width="68" height="32" rx="6" fill="#0d0d12" stroke="#bf5af2" stroke-width="1"/>
+      <text x="34" y="21" class="phase-dur" text-anchor="middle" fill="#bf5af2">checkpoint</text>
+    </g>
+  </g>
+
+  <!-- Down arrow to wrap-up -->
+  <path class="arrow" d="M 600 528 L 600 583"/>
+
+  <!-- Wrap-up row -->
+  <text x="40" y="608" class="cap" font-weight="600">WRAP-UP  (auto-finalize, ~12 min)</text>
+
+  <g>
+    <rect class="phase-wrapup" x="200" y="630" width="220" height="80" rx="8"/>
+    <text x="310" y="654" class="phase-name" text-anchor="middle">ANALYZE</text>
+    <text x="310" y="678" class="phase-dur" text-anchor="middle">aggregate 30 measurements</text>
+    <text x="310" y="694" class="phase-dur" text-anchor="middle">→ dashboard/data/v10-only.json</text>
+  </g>
+  <path class="arrow" d="M 420 670 L 480 670"/>
+
+  <g>
+    <rect class="phase-wrapup" x="480" y="630" width="220" height="80" rx="8"/>
+    <text x="590" y="654" class="phase-name" text-anchor="middle">REPORT</text>
+    <text x="590" y="678" class="phase-dur" text-anchor="middle">generate markdown</text>
+    <text x="590" y="694" class="phase-dur" text-anchor="middle">→ docs/REPORTS/2026-05-17-...</text>
+  </g>
+  <path class="arrow" d="M 700 670 L 760 670"/>
+
+  <g>
+    <rect class="phase-wrapup" x="760" y="630" width="220" height="80" rx="8"/>
+    <text x="870" y="654" class="phase-name" text-anchor="middle">TEARDOWN</text>
+    <text x="870" y="678" class="phase-dur" text-anchor="middle">delete cluster + EC2 + BG</text>
+    <text x="870" y="694" class="phase-dur" text-anchor="middle">zero residual cost</text>
+  </g>
+
+  <!-- Checkpoint sidebar -->
+  <g>
+    <rect class="checkpoint" x="40" y="630" width="140" height="160" rx="10"/>
+    <text x="110" y="654" fill="#bf5af2" font-size="14" font-weight="700" text-anchor="middle">checkpoint</text>
+    <text x="110" y="672" class="phase-dur" text-anchor="middle">progress.json</text>
+    <text x="110" y="700" class="phase-dur" text-anchor="middle" font-size="10">Each phase:</text>
+    <text x="110" y="715" class="phase-dur" text-anchor="middle" font-size="10">pending →</text>
+    <text x="110" y="728" class="phase-dur" text-anchor="middle" font-size="10">running →</text>
+    <text x="110" y="741" class="phase-dur" text-anchor="middle" font-size="10">done | failed</text>
+    <text x="110" y="765" class="phase-dur" text-anchor="middle" font-size="10" fill="#5ac8fa">resumable</text>
+    <text x="110" y="780" class="phase-dur" text-anchor="middle" font-size="10" fill="#5ac8fa">retry × 3</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="600" y="855" class="cap" text-anchor="middle">infra/orchestrate-v10-master.sh · scripts/v10-status.sh · scripts/v10-extract-data.py · scripts/v10-generate-report.py</text>
+</svg>

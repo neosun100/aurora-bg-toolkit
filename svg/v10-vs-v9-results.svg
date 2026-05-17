@@ -1,0 +1,214 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif">
+  <style>
+    .bg{fill:#0a0a0f}
+    .cap{fill:#86868b;font-size:11px;letter-spacing:0.05em}
+    .num{fill:#5ac8fa;font-weight:700;font-family:monospace;font-size:32px}
+    .label{fill:#f5f5f7;font-weight:600;font-size:13px}
+    .panel{fill:#14141a;stroke:#2a2a35;stroke-width:1}
+    .v9-color{fill:#5ac8fa}
+    .v10-color{fill:#ff2d92}
+  </style>
+  <defs>
+    <linearGradient id="grad-title" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2997ff"/>
+      <stop offset="100%" stop-color="#bf5af2"/>
+    </linearGradient>
+    <linearGradient id="grad-bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2997ff" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#2997ff" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="grad-fo" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ff9f0a" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#ff9f0a" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="grad-rb" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5ac8fa" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#5ac8fa" stop-opacity="0.02"/>
+    </linearGradient>
+  </defs>
+
+  <rect class="bg" width="1200" height="720"/>
+
+  <!-- Title -->
+  <text x="40" y="48" font-size="26" font-weight="700" fill="url(#grad-title)">v10 vs v9 — Production-load downtime</text>
+  <text x="40" y="72" class="cap" font-size="13">Same JDBC + Hikari + JVM tuning, but v10 is the first run at production load (1280 ops/s, pool=50). v9's "v4 control" cells were silently low-load.</text>
+
+  <!-- 3 panels: BG, FO, RB -->
+
+  <!-- ============ Blue/Green ============ -->
+  <g transform="translate(40, 110)">
+    <rect class="panel" width="370" height="540" rx="14" fill="url(#grad-bg)"/>
+
+    <text x="20" y="32" fill="#2997ff" font-size="16" font-weight="700">Blue/Green switchover</text>
+    <text x="20" y="50" class="cap">10 rounds · 10 Hz STATS · 100 ms precision</text>
+
+    <!-- Hero: median comparison -->
+    <text x="20" y="86" class="cap">v9-tuned median</text>
+    <text x="20" y="124" class="num v9-color">3.9 s</text>
+
+    <text x="200" y="86" class="cap">v10-final median</text>
+    <text x="200" y="124" class="num v10-color">5.05 s</text>
+
+    <text x="20" y="148" font-size="11" fill="#ff453a" font-weight="600">+1.15 s slower at production load</text>
+
+    <!-- Bar visualisation: v9 vs v10 BG samples -->
+    <text x="20" y="190" class="cap">writeMaxMs distribution</text>
+
+    <!-- v9 row -->
+    <text x="20" y="218" font-size="11" fill="#5ac8fa" font-weight="600">v9-tuned (n=12)</text>
+    <rect x="120" y="208" width="180" height="14" rx="3" fill="#1a1a25" stroke="#5ac8fa" stroke-width="1"/>
+    <rect x="120" y="208" width="76" height="14" rx="3" fill="#5ac8fa" fill-opacity="0.6"/>
+    <text x="305" y="220" font-size="10" fill="#5ac8fa">3.5–4.2 s</text>
+
+    <!-- v10 row -->
+    <text x="20" y="248" font-size="11" fill="#ff2d92" font-weight="600">v10-final (n=10)</text>
+    <rect x="120" y="238" width="225" height="14" rx="3" fill="#1a1a25" stroke="#ff2d92" stroke-width="1"/>
+    <rect x="120" y="238" width="22" height="14" rx="3" fill="#ff2d92" fill-opacity="0.6"/>
+    <text x="350" y="250" font-size="10" fill="#ff2d92">4.5–21 s</text>
+
+    <!-- Outlier callout -->
+    <rect x="20" y="280" width="330" height="80" rx="8" fill="#1a0f0f" stroke="#ff453a" stroke-width="1.2"/>
+    <text x="35" y="302" fill="#ff453a" font-size="13" font-weight="700">⚠ NEW: 30% outlier rate</text>
+    <text x="35" y="322" font-size="11" fill="#86868b">3 of 10 rounds: 14.8s · 18.0s · 21.0s</text>
+    <text x="35" y="338" font-size="11" fill="#86868b">v9 had 0 outliers across 12 rounds.</text>
+    <text x="35" y="352" font-size="11" fill="#86868b">→ production timeout must be ≥ 25s</text>
+
+    <!-- Sample dot grid (visual) -->
+    <text x="20" y="384" class="cap">v10 samples (sorted)</text>
+    <g transform="translate(20, 396)">
+      <!-- 10 v10 samples: [4500, 4500, 4706, 4812, 5000, 5101, 5200, 14802, 18000, 21000] -->
+      <!-- Layout: 5 horizontal bars per cell, sized log-scaled -->
+      <g font-size="9" fill="#f5f5f7">
+        <text x="0" y="14">4500</text><rect x="50" y="6" width="38" height="10" rx="2" fill="#ff2d92"/>
+        <text x="100" y="14">4500</text><rect x="150" y="6" width="38" height="10" rx="2" fill="#ff2d92"/>
+        <text x="200" y="14">4706</text><rect x="250" y="6" width="40" height="10" rx="2" fill="#ff2d92"/>
+        <text x="0" y="34">4812</text><rect x="50" y="26" width="40" height="10" rx="2" fill="#ff2d92"/>
+        <text x="100" y="34">5000</text><rect x="150" y="26" width="42" height="10" rx="2" fill="#ff2d92"/>
+        <text x="200" y="34">5101</text><rect x="250" y="26" width="42" height="10" rx="2" fill="#ff2d92"/>
+        <text x="0" y="54">5200</text><rect x="50" y="46" width="44" height="10" rx="2" fill="#ff2d92"/>
+        <text x="100" y="54">14802</text><rect x="150" y="46" width="125" height="10" rx="2" fill="#ff453a"/>
+        <text x="0" y="74">18000</text><rect x="50" y="66" width="152" height="10" rx="2" fill="#ff453a"/>
+        <text x="100" y="74">21000</text><rect x="150" y="66" width="178" height="10" rx="2" fill="#ff453a"/>
+      </g>
+    </g>
+
+    <!-- Footer stats -->
+    <text x="20" y="500" class="cap">stats</text>
+    <text x="20" y="518" font-size="11" fill="#86868b">min 4.50s · median 5.05s · p95 19.7s · max 21.0s</text>
+  </g>
+
+  <!-- ============ Failover ============ -->
+  <g transform="translate(420, 110)">
+    <rect class="panel" width="370" height="540" rx="14" fill="url(#grad-fo)"/>
+
+    <text x="20" y="32" fill="#ff9f0a" font-size="16" font-weight="700">Failover</text>
+    <text x="20" y="50" class="cap">writer-reader role swap · 10 rounds</text>
+
+    <text x="20" y="86" class="cap">v9-tuned median</text>
+    <text x="20" y="124" class="num v9-color">8.0 s</text>
+
+    <text x="200" y="86" class="cap">v10-final median</text>
+    <text x="200" y="124" class="num v10-color">7.75 s</text>
+
+    <text x="20" y="148" font-size="11" fill="#30d158" font-weight="600">essentially identical (-0.25 s)</text>
+
+    <!-- Bars -->
+    <text x="20" y="190" class="cap">writeMaxMs range</text>
+
+    <text x="20" y="218" font-size="11" fill="#5ac8fa" font-weight="600">v9-tuned (n=11)</text>
+    <rect x="120" y="208" width="225" height="14" rx="3" fill="#1a1a25" stroke="#5ac8fa" stroke-width="1"/>
+    <rect x="120" y="208" width="105" height="14" rx="3" fill="#5ac8fa" fill-opacity="0.6"/>
+    <text x="350" y="220" font-size="10" fill="#5ac8fa">0–17 s</text>
+
+    <text x="20" y="248" font-size="11" fill="#ff2d92" font-weight="600">v10-final (n=10)</text>
+    <rect x="120" y="238" width="225" height="14" rx="3" fill="#1a1a25" stroke="#ff2d92" stroke-width="1"/>
+    <rect x="120" y="238" width="100" height="14" rx="3" fill="#ff2d92" fill-opacity="0.6"/>
+    <text x="350" y="250" font-size="10" fill="#ff2d92">0–14.8 s</text>
+
+    <!-- OK callout -->
+    <rect x="20" y="280" width="330" height="80" rx="8" fill="#0d2519" stroke="#30d158" stroke-width="1.2"/>
+    <text x="35" y="302" fill="#30d158" font-size="13" font-weight="700">✓ Failover behaves consistently</text>
+    <text x="35" y="322" font-size="11" fill="#86868b">v10 max 14.8s, similar to v9 max 17.3s</text>
+    <text x="35" y="338" font-size="11" fill="#86868b">stdev 3.7s (v9: 4.3-5.2s) — actually tighter</text>
+    <text x="35" y="352" font-size="11" fill="#86868b">→ Aurora failover is reproducible</text>
+
+    <!-- v10 samples -->
+    <text x="20" y="384" class="cap">v10 samples (sorted)</text>
+    <g transform="translate(20, 396)">
+      <g font-size="9" fill="#f5f5f7">
+        <text x="0" y="14">0</text><rect x="50" y="6" width="0" height="10" rx="2" fill="#ff2d92"/>
+        <text x="100" y="14">5700</text><rect x="150" y="6" width="48" height="10" rx="2" fill="#ff2d92"/>
+        <text x="200" y="14">6200</text><rect x="250" y="6" width="52" height="10" rx="2" fill="#ff2d92"/>
+        <text x="0" y="34">6600</text><rect x="50" y="26" width="56" height="10" rx="2" fill="#ff2d92"/>
+        <text x="100" y="34">7600</text><rect x="150" y="26" width="64" height="10" rx="2" fill="#ff2d92"/>
+        <text x="200" y="34">7900</text><rect x="250" y="26" width="68" height="10" rx="2" fill="#ff2d92"/>
+        <text x="0" y="54">9500</text><rect x="50" y="46" width="80" height="10" rx="2" fill="#ff2d92"/>
+        <text x="100" y="54">10100</text><rect x="150" y="46" width="86" height="10" rx="2" fill="#ff2d92"/>
+        <text x="0" y="74">11000</text><rect x="50" y="66" width="93" height="10" rx="2" fill="#ff2d92"/>
+        <text x="100" y="74">14800</text><rect x="150" y="66" width="125" height="10" rx="2" fill="#ff453a"/>
+      </g>
+    </g>
+
+    <text x="20" y="500" class="cap">stats</text>
+    <text x="20" y="518" font-size="11" fill="#86868b">min 0ms · median 7.75s · p95 13.1s · max 14.8s</text>
+  </g>
+
+  <!-- ============ Reboot ============ -->
+  <g transform="translate(800, 110)">
+    <rect class="panel" width="370" height="540" rx="14" fill="url(#grad-rb)"/>
+
+    <text x="20" y="32" fill="#5ac8fa" font-size="16" font-weight="700">Reboot</text>
+    <text x="20" y="50" class="cap">writer instance reboot · 10 rounds</text>
+
+    <text x="20" y="86" class="cap">v9-tuned median</text>
+    <text x="20" y="124" class="num v9-color" font-size="28">0.1 s</text>
+
+    <text x="200" y="86" class="cap">v10-final median</text>
+    <text x="200" y="124" class="num v10-color" font-size="28">0.1 s</text>
+
+    <text x="20" y="148" font-size="11" fill="#30d158" font-weight="600">✓ JVM DNS TTL=5 wins again</text>
+
+    <!-- Visual -->
+    <text x="20" y="190" class="cap">writeMaxMs range</text>
+
+    <text x="20" y="218" font-size="11" fill="#5ac8fa" font-weight="600">v9-tuned (n=10)</text>
+    <rect x="120" y="208" width="225" height="14" rx="3" fill="#1a1a25" stroke="#5ac8fa" stroke-width="1"/>
+    <rect x="120" y="208" width="6" height="14" rx="3" fill="#5ac8fa" fill-opacity="0.6"/>
+    <text x="350" y="220" font-size="10" fill="#5ac8fa">0–0.3 s</text>
+
+    <text x="20" y="248" font-size="11" fill="#ff2d92" font-weight="600">v10-final (n=10)</text>
+    <rect x="120" y="238" width="225" height="14" rx="3" fill="#1a1a25" stroke="#ff2d92" stroke-width="1"/>
+    <rect x="120" y="238" width="36" height="14" rx="3" fill="#ff2d92" fill-opacity="0.6"/>
+    <text x="350" y="250" font-size="10" fill="#ff2d92">0–2.6 s</text>
+
+    <!-- Callout about JVM DNS TTL -->
+    <rect x="20" y="280" width="330" height="80" rx="8" fill="#0d2519" stroke="#30d158" stroke-width="1.2"/>
+    <text x="35" y="302" fill="#30d158" font-size="13" font-weight="700">✓ Single-line JVM property: 50× win</text>
+    <text x="35" y="322" font-size="11" fill="#86868b">-Dnetworkaddress.cache.ttl=5</text>
+    <text x="35" y="338" font-size="11" fill="#86868b">turns reboot from ~5s → 100ms median</text>
+    <text x="35" y="352" font-size="11" fill="#86868b">→ mandatory for any RDS JDBC client</text>
+
+    <!-- v10 samples -->
+    <text x="20" y="384" class="cap">v10 samples (sorted)</text>
+    <g transform="translate(20, 396)">
+      <g font-size="9" fill="#f5f5f7">
+        <text x="0" y="14">0</text><rect x="50" y="6" width="0" height="10" rx="2" fill="#30d158"/>
+        <text x="100" y="14">0</text><rect x="150" y="6" width="0" height="10" rx="2" fill="#30d158"/>
+        <text x="200" y="14">0</text><rect x="250" y="6" width="0" height="10" rx="2" fill="#30d158"/>
+        <text x="0" y="34">100</text><rect x="50" y="26" width="2" height="10" rx="2" fill="#30d158"/>
+        <text x="100" y="34">100</text><rect x="150" y="26" width="2" height="10" rx="2" fill="#30d158"/>
+        <text x="200" y="34">100</text><rect x="250" y="26" width="2" height="10" rx="2" fill="#30d158"/>
+        <text x="0" y="54">2400</text><rect x="50" y="46" width="48" height="10" rx="2" fill="#ff9f0a"/>
+        <text x="100" y="54">2400</text><rect x="150" y="46" width="48" height="10" rx="2" fill="#ff9f0a"/>
+        <text x="0" y="74">2500</text><rect x="50" y="66" width="50" height="10" rx="2" fill="#ff9f0a"/>
+        <text x="100" y="74">2600</text><rect x="150" y="66" width="52" height="10" rx="2" fill="#ff9f0a"/>
+      </g>
+    </g>
+
+    <text x="20" y="500" class="cap">stats</text>
+    <text x="20" y="518" font-size="11" fill="#86868b">min 0ms · median 100ms · p95 2.56s · max 2.6s</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="600" y="700" class="cap" text-anchor="middle">v9 data: docs/REPORTS/2026-05-16-v9-final-report.md  ·  v10 data: docs/REPORTS/2026-05-17-v10-production.md</text>
+</svg>
