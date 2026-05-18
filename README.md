@@ -72,19 +72,19 @@ Originally built to diagnose a 4–57s downtime issue at a customer (HashKey), n
 
 | Scenario      | N   | min      | median    | mean      | p95       | max       | stdev     |
 |---------------|-----|----------|-----------|-----------|-----------|-----------|-----------|
-| **Blue/Green**    | 5   | 3.70 s   | **3.90 s** | 4.26 s    | 5.00 s    | 5.00 s    | 608 ms    |
-| **Failover**      | 10  | 4.40 s   | **10.15 s** | 9.67 s    | 14.10 s   | 15.90 s   | 3.12 s    |
-| **Reboot**        | 10  | 0 ms     | **6.95 s** | 6.42 s    | 8.00 s    | 8.40 s    | 2.21 s    |
+| **Blue/Green**    | 5   | 3.70 s   | **4.41 s** | 4.42 s    | 5.06 s    | 5.10 s    | 527 ms    |
+| **Failover**      | 10  | 5.90 s   | **8.20 s** | 10.81 s    | 21.78 s   | 22.50 s   | 5.63 s    |
+| **Reboot**        | 10  | 6.30 s   | **6.65 s** | 6.67 s    | 6.96 s    | 7.00 s    | 205 ms    |
 
 ### 🔑 Key findings (v11 vs v10)
 
 1. ✅ **v10's 30% BG outlier rate did NOT reproduce in v11.** v10 reported 3 of 10 BG rounds at 14-21 s; v11's 5 BG rounds (per-cluster R1) were all **3.7-5.0 s with zero outliers**. This suggests v10's outliers were **time-dependent or RDS-control-plane-dependent**, not a systemic issue.
 
-2. ⚠️ **5-cluster parallel reboot is 70× slower than single-cluster reboot.** v10 RB median 100 ms (one client, one DB reboot); v11 RB median **6.95 s** (5 clients, 5 DB reboots simultaneously). **Production implication**: applications with multiple Aurora clients experiencing reboot simultaneously should expect ~7s downtime, not the 100ms from single-client testing.
+2. ⚠️ **5-cluster parallel reboot is 70× slower than single-cluster reboot.** v10 RB median 100 ms (one client, one DB reboot); v11 RB median **6.65 s** (5 clients, 5 DB reboots simultaneously). **Production implication**: applications with multiple Aurora clients experiencing reboot simultaneously should expect ~7s downtime, not the 100ms from single-client testing.
 
-3. ✅ **Failover is reproducible across orchestration paths.** v11 FO median 10.15 s vs v10 7.75 s — within statistical noise.
+3. ⚠️ **Failover shows occasional 20+ s outliers under 5-client parallel.** v11 FO R2 produced 2 outliers (20.9s, 22.5s) that R1 didn't have. This may be related to BG lifecycle artifacts still present in the cluster state when FO fires.
 
-4. ⚙️ **CDK + 5-cluster parallel works.** Total experiment wall time **42 minutes** for 25 measurements (vs v10's 7 hours for 30 measurements). The CDK migration delivers full IaC + significant parallelization speedup.
+4. ⚙️ **CDK + 5-cluster parallel works.** Total experiment wall time **57 minutes** for 25 measurements (vs v10's 7 hours for 30 measurements). The CDK migration delivers full IaC + significant parallelization speedup.
 
 ### 📂 Full data
 
