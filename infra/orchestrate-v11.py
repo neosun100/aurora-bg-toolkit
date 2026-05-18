@@ -508,9 +508,11 @@ class V11Orchestrator:
                     return bg["BlueGreenDeploymentIdentifier"]
                 if bg["Status"] == "SWITCHOVER_COMPLETED":
                     # delete + create new
-                    self.rds.delete_blue_green_deployment(
-                        BlueGreenDeploymentIdentifier=bg["BlueGreenDeploymentIdentifier"],
-                        DeleteTarget=True,
+                    # CRITICAL: must wait for -old* artifacts to be cleaned
+                    # before delete_blue_green_deployment is allowed (RDS
+                    # InvalidBlueGreenDeploymentStateFault otherwise).
+                    self._safe_delete_bg(
+                        bg["BlueGreenDeploymentIdentifier"], cluster_id
                     )
                     time.sleep(30)
         # Force-clean -old* from previous rounds
@@ -536,6 +538,41 @@ class V11Orchestrator:
             time.sleep(30)
         raise RuntimeError(f"[{cluster_id}] BG never AVAILABLE")
 
+    def _safe_delete_bg(self, bg_id: str, cluster_id: str, max_minutes: int = 12):
+        """Delete a BG, retrying on lifecycle lock.
+
+        v11 lesson: when a BG is in SWITCHOVER_COMPLETED, RDS still has work
+        to do (creating -old1 cluster) and rejects DeleteBlueGreenDeployment
+        with InvalidBlueGreenDeploymentStateFault. We retry every 30s for up
+        to max_minutes, while also actively cleaning -old* artifacts which
+        accelerates the lifecycle progression.
+        """
+        from botocore.exceptions import ClientError
+        max_attempts = (max_minutes * 60) // 30
+        for attempt in range(1, max_attempts + 1):
+            try:
+                self.rds.delete_blue_green_deployment(
+                    BlueGreenDeploymentIdentifier=bg_id, DeleteTarget=True,
+                )
+                log.info("[%s] BG %s deletion accepted (attempt %d)",
+                         cluster_id, bg_id, attempt)
+                return
+            except ClientError as e:
+                code = e.response.get("Error", {}).get("Code", "")
+                msg = str(e)[:90]
+                if "InvalidBlueGreenDeploymentStateFault" not in code and \
+                   "InvalidBlueGreenDeploymentStateFault" not in msg:
+                    raise
+                # Help unstick lifecycle by cleaning -old* artifacts
+                if attempt % 3 == 1:
+                    self._cleanup_old_instances_clusters()
+                log.info("[%s] BG %s not deletable yet (attempt %d/%d): %s",
+                         cluster_id, bg_id, attempt, max_attempts, msg)
+                time.sleep(30)
+        raise RuntimeError(
+            f"[{cluster_id}] BG {bg_id} could not be deleted after {max_minutes} min"
+        )
+
     def _cleanup_old_instances_clusters(self):
         # delete -old* DB instances
         try:
@@ -549,6 +586,23 @@ class V11Orchestrator:
                         )
                     except Exception:
                         pass
+        except Exception:
+            pass
+        # delete -old* DB clusters (only if their instances are gone)
+        try:
+            r = self.rds.describe_db_clusters()
+            for cl in r["DBClusters"]:
+                cid = cl["DBClusterIdentifier"]
+                if "-old" not in cid:
+                    continue
+                if cl.get("DBClusterMembers"):
+                    continue  # still has members; will retry next call
+                try:
+                    self.rds.delete_db_cluster(
+                        DBClusterIdentifier=cid, SkipFinalSnapshot=True,
+                    )
+                except Exception:
+                    pass
         except Exception:
             pass
 
@@ -656,26 +710,64 @@ echo $! > /home/ec2-user/{round_dir}/ec2_wrapper.pid
             "JSII_SILENCE_WARNING_UNTESTED_NODE_VERSION": "1",
         }
 
-        # First: clean up any BG SWITCHOVER_COMPLETED that survived
+        # ─── 1. Delete every v11 BG with retries (lifecycle-safe) ───
+        log.info("Pre-destroy: deleting all v11 BGs (with retries)...")
         try:
             bgs = self.rds.describe_blue_green_deployments()["BlueGreenDeployments"]
             for bg in bgs:
-                if "test-v11-" in (bg.get("BlueGreenDeploymentName") or ""):
-                    log.info("destroying lingering BG %s",
-                             bg["BlueGreenDeploymentName"])
-                    self.rds.delete_blue_green_deployment(
-                        BlueGreenDeploymentIdentifier=bg["BlueGreenDeploymentIdentifier"],
-                        DeleteTarget=True,
-                    )
-            time.sleep(60)
-            # delete -old* instances/clusters
-            self._cleanup_old_instances_clusters()
+                bg_name = bg.get("BlueGreenDeploymentName") or ""
+                if "test-v11-" in bg_name:
+                    try:
+                        self._safe_delete_bg(
+                            bg["BlueGreenDeploymentIdentifier"], "destroy",
+                            max_minutes=12,
+                        )
+                    except Exception as e:
+                        log.warning("BG delete failed (non-fatal): %s", e)
         except Exception as e:
-            log.warning("BG pre-cleanup failed (non-fatal): %s", e)
+            log.warning("BG enumeration failed (non-fatal): %s", e)
 
+        # ─── 2. Wait for all -old* artifacts to be gone (max 10 min) ───
+        log.info("Pre-destroy: waiting for -old* artifacts to disappear...")
+        for attempt in range(40):  # 40 * 15s = 10 min
+            try:
+                insts = self.rds.describe_db_instances()["DBInstances"]
+                old_insts = [i for i in insts if "-old" in i["DBInstanceIdentifier"]]
+                cls = self.rds.describe_db_clusters()["DBClusters"]
+                old_cls = [c for c in cls if "-old" in c["DBClusterIdentifier"]]
+                if not old_insts and not old_cls:
+                    log.info("Pre-destroy: all -old* gone (attempt %d)", attempt + 1)
+                    break
+                # Re-trigger cleanup every 3 attempts
+                if attempt % 3 == 0:
+                    self._cleanup_old_instances_clusters()
+                if attempt % 4 == 0:
+                    log.info("Pre-destroy: still waiting (insts=%d, cls=%d)",
+                             len(old_insts), len(old_cls))
+                time.sleep(15)
+            except Exception as e:
+                log.warning("Pre-destroy poll failed: %s", e)
+                time.sleep(15)
+
+        # ─── 3. Now run cdk destroy ───
         log.info("cdk destroy --all (~12 min)...")
-        sh(["cdk", "destroy", "--all", "--force"],
-           cwd=CDK_DIR, env=env, timeout=1800)
+        full_env = os.environ.copy()
+        full_env.update(env)
+        proc = subprocess.Popen(
+            ["cdk", "destroy", "--all", "--force"],
+            cwd=CDK_DIR, env=full_env,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        )
+        try:
+            for line in proc.stdout:
+                log.info("[cdk-destroy] %s", line.rstrip())
+            rc = proc.wait(timeout=1800)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            raise RuntimeError("cdk destroy timed out (1800 s)")
+        if rc != 0:
+            raise RuntimeError(f"cdk destroy --all exited with rc={rc}")
+        log.info("cdk destroy complete")
 
     # ───── main ─────
     def main(self):

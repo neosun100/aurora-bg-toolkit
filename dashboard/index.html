@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aurora BG Toolkit — v10 Production Dashboard</title>
+<title>Aurora BG Toolkit — Production Dashboard</title>
 <style>
   :root {
     --bg: #000;
@@ -31,7 +31,7 @@
   }
   .wrap { max-width: 1280px; margin: 0 auto; padding: clamp(2rem, 5vw, 4rem); }
 
-  header { margin-bottom: 3rem; }
+  header { margin-bottom: 2rem; }
   .badge {
     display: inline-block;
     padding: 0.25rem 0.75rem;
@@ -56,6 +56,32 @@
   }
   header p { color: var(--dim); font-size: 1.05rem; margin: 0; }
 
+  /* View switcher */
+  .view-switcher {
+    display: inline-flex;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px;
+    margin-top: 1rem;
+    gap: 4px;
+  }
+  .view-switcher a {
+    padding: 0.5rem 1.1rem;
+    border-radius: 999px;
+    color: var(--dim);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+  }
+  .view-switcher a:hover { color: var(--fg); }
+  .view-switcher a.active {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+
   .panel {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -72,7 +98,6 @@
   .panel h2 .sub { color: var(--dim); font-weight: 400; font-size: 0.9rem; margin-left: 0.5rem; }
   .panel p.lead { color: var(--dim); margin: -0.5rem 0 1.25rem; font-size: 0.95rem; }
 
-  /* Hero strip */
   .hero {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -105,7 +130,6 @@
   .hero .card .num.cyan { color: var(--cyan); }
   .hero .card .meta { color: var(--dim); font-size: 0.85rem; }
 
-  /* Highlights table */
   .highlights {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -141,8 +165,7 @@
     margin-top: 0.75rem;
   }
 
-  /* Stats table */
-  table {
+  table.data-table, #statsTable, #roundsTable {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.9rem;
@@ -163,7 +186,6 @@
   td.num { font-variant-numeric: tabular-nums; text-align: right; }
   td.scenario { font-weight: 600; color: var(--accent); }
 
-  /* Box plot SVG container */
   .boxplot-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -190,7 +212,6 @@
   }
   .boxplot-cell svg { width: 100%; height: 220px; display: block; }
 
-  /* Pill */
   .pill {
     display: inline-block;
     padding: 0.15rem 0.55rem;
@@ -204,7 +225,6 @@
   .pill.warn { background: rgba(255,159,10,0.15); color: var(--orange); }
   .pill.bad  { background: rgba(255,69,58,0.15); color: var(--red); }
 
-  /* Glow */
   .glow {
     position: absolute;
     width: 600px; height: 600px;
@@ -229,19 +249,6 @@
     padding-top: 2rem;
   }
   footer a { color: var(--accent); text-decoration: none; }
-
-  .progress-strip {
-    display: flex;
-    gap: 4px;
-    margin-top: 0.75rem;
-  }
-  .progress-strip .dot {
-    flex: 1;
-    height: 6px;
-    border-radius: 3px;
-    background: var(--panel-3);
-  }
-  .progress-strip .dot.done { background: var(--green); }
 </style>
 </head>
 <body>
@@ -250,25 +257,27 @@
 
 <div class="wrap">
   <header>
-    <span class="badge">v10 · Production reference</span>
+    <span class="badge" id="versionBadge">v11 · CDK + 5-cluster parallel</span>
     <h1>Aurora BG Toolkit</h1>
-    <p>Production-grade reference configuration. Single config, single load, three scenarios. <span id="genAt"></span></p>
+    <p id="versionTagline">Full IaC migration. 5 clusters in parallel. Per-cluster contention analysis. <span id="genAt"></span></p>
+    <div class="view-switcher">
+      <a href="#v11" id="link-v11" class="active">v11 (CDK + parallel)</a>
+      <a href="#v10" id="link-v10">v10 (single cluster)</a>
+    </div>
   </header>
 
   <div id="empty" class="panel empty" style="display:none">
-    <h2>No v10 data yet</h2>
-    <p>Run the orchestrator first:</p>
-    <p><code>nohup bash infra/orchestrate-v10-master.sh &gt; /tmp/v10-launch.log 2&gt;&amp;1 &amp;</code></p>
-    <p>Or check progress: <code>bash scripts/v10-status.sh</code></p>
+    <h2>No data yet</h2>
+    <p id="emptyMsg">Run the orchestrator first.</p>
   </div>
 
   <div id="content" style="display:none">
     <!-- Hero: 3 big numbers, one per scenario -->
     <div class="hero" id="hero"></div>
 
-    <!-- v10 configuration panel -->
+    <!-- Configuration panel -->
     <div class="panel">
-      <h2>Configuration <span class="sub">configs/v10-final.yaml</span></h2>
+      <h2 id="configTitle">Configuration <span class="sub" id="configFile">configs/v11-final.yaml</span></h2>
       <p class="lead">The exact parameters used to produce these numbers. Reproducible bit-for-bit.</p>
       <div class="highlights" id="highlights"></div>
       <details>
@@ -284,10 +293,17 @@
       <div class="boxplot-container" id="boxplots"></div>
     </div>
 
+    <!-- v11-only: Per-cluster breakdown -->
+    <div class="panel" id="perClusterPanel">
+      <h2>Per-cluster breakdown <span class="sub">5 clusters in parallel</span></h2>
+      <p class="lead">Detect cluster contention. If one cluster has dramatically different numbers, parallelism may be skewed (e.g., this cluster's reader was reused for failover, etc).</p>
+      <div id="perCluster"></div>
+    </div>
+
     <!-- Statistics table -->
     <div class="panel">
-      <h2>Statistics</h2>
-      <p class="lead">Aggregated across all rounds for each scenario. Lower is better; small stdev means predictable.</p>
+      <h2>Statistics (aggregated)</h2>
+      <p class="lead">All rounds, all clusters. Lower is better; small stdev means predictable.</p>
       <table id="statsTable">
         <thead><tr>
           <th>Scenario</th>
@@ -310,14 +326,14 @@
       <h2>Per-round measurements</h2>
       <p class="lead">Every round, exact value, with raw log directory for traceability.</p>
       <details open>
-        <summary id="roundsToggle">Show all 30 rounds</summary>
+        <summary id="roundsToggle">Show all rounds</summary>
         <table id="roundsTable">
-          <thead><tr>
+          <thead><tr id="roundsHead">
             <th>Scenario</th>
+            <th>Cluster</th>
             <th class="num">Round</th>
             <th class="num">↓write max</th>
             <th class="num">↓read max</th>
-            <th>Wrapper</th>
             <th>Run ID</th>
           </tr></thead>
           <tbody></tbody>
@@ -327,11 +343,57 @@
   </div>
 
   <footer>
-    Aurora BG Toolkit · v10-production ·
+    Aurora BG Toolkit · <span id="footerVersion">v11-cdk-parallel</span> ·
     <a href="https://github.com/neosun100/aurora-bg-toolkit">github.com/neosun100/aurora-bg-toolkit</a>
   </footer>
 </div>
 
-<script src="assets/dashboard-v10.js?v=20260517-v10-1"></script>
+<!-- View loader: switches dashboard-v10.js or dashboard-v11.js based on URL hash -->
+<script>
+(function () {
+  // Determine view from hash; default v11
+  const hash = window.location.hash.replace('#', '');
+  const view = (hash === 'v10') ? 'v10' : 'v11';
+
+  // Update UI for the chosen view
+  document.getElementById('link-v10').classList.toggle('active', view === 'v10');
+  document.getElementById('link-v11').classList.toggle('active', view === 'v11');
+
+  if (view === 'v10') {
+    document.getElementById('versionBadge').textContent = 'v10 · Single cluster, bash orchestrator';
+    document.getElementById('versionTagline').innerHTML = 'Production-grade reference configuration. Single config, single load, three scenarios. <span id="genAt"></span>';
+    document.title = 'Aurora BG Toolkit — v10 Production Dashboard';
+    document.getElementById('configFile').textContent = 'configs/v10-final.yaml';
+    document.getElementById('footerVersion').textContent = 'v10-production';
+    document.getElementById('emptyMsg').innerHTML = 'Run: <code>nohup bash infra/orchestrate-v10-master.sh > /tmp/v10-launch.log 2>&amp;1 &amp;</code>';
+    // Hide per-cluster panel for v10
+    document.getElementById('perClusterPanel').style.display = 'none';
+    // Hide cluster column
+    const head = document.getElementById('roundsHead');
+    head.innerHTML = '<th>Scenario</th><th class="num">Round</th><th class="num">↓write max</th><th class="num">↓read max</th><th>Wrapper</th><th>Run ID</th>';
+  } else {
+    // v11
+    document.getElementById('emptyMsg').innerHTML = 'Run: <code>nohup python3 infra/orchestrate-v11.py > /tmp/v11-launch.log 2>&amp;1 &amp;</code>';
+  }
+
+  // Re-route the link clicks to also reload (so the right .js loads)
+  document.getElementById('link-v10').addEventListener('click', function (e) {
+    if (view !== 'v10') {
+      // navigate happens via hash; need full reload to swap script
+      setTimeout(() => location.reload(), 50);
+    }
+  });
+  document.getElementById('link-v11').addEventListener('click', function (e) {
+    if (view !== 'v11') {
+      setTimeout(() => location.reload(), 50);
+    }
+  });
+
+  // Inject the right script
+  const s = document.createElement('script');
+  s.src = `assets/dashboard-${view}.js?v=20260518-${view}-1`;
+  document.body.appendChild(s);
+})();
+</script>
 </body>
 </html>
