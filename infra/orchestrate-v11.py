@@ -538,14 +538,18 @@ class V11Orchestrator:
             time.sleep(30)
         raise RuntimeError(f"[{cluster_id}] BG never AVAILABLE")
 
-    def _safe_delete_bg(self, bg_id: str, cluster_id: str, max_minutes: int = 12):
+    def _safe_delete_bg(self, bg_id: str, cluster_id: str, max_minutes: int = 30):
         """Delete a BG, retrying on lifecycle lock.
 
         v11 lesson: when a BG is in SWITCHOVER_COMPLETED, RDS still has work
-        to do (creating -old1 cluster) and rejects DeleteBlueGreenDeployment
-        with InvalidBlueGreenDeploymentStateFault. We retry every 30s for up
-        to max_minutes, while also actively cleaning -old* artifacts which
-        accelerates the lifecycle progression.
+        to do (creating -old1 cluster + instances) and rejects
+        DeleteBlueGreenDeployment with InvalidBlueGreenDeploymentStateFault.
+        We retry every 30s for up to max_minutes, while also actively
+        cleaning -old* artifacts which accelerates the lifecycle progression.
+
+        Default max_minutes is 30 because empirical data shows RDS BG
+        lifecycle completion (SWITCHOVER_COMPLETED → deletable) can take
+        15-25 minutes when -old1 instances are r7g.large + reader t3.medium.
         """
         from botocore.exceptions import ClientError
         max_attempts = (max_minutes * 60) // 30

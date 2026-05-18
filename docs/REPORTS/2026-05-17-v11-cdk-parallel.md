@@ -1,7 +1,7 @@
 # v11-CDK-Parallel Final Report — 2026-05-17
 
 > **Experiment**: v11-cdk-parallel  
-> **Generated**: 2026-05-17T13:09:36Z  
+> **Generated**: 2026-05-18T07:20:15Z  
 > **Infrastructure**: AWS CDK (Python) — full IaC  
 > **Parallelism**: 5 clusters in parallel  
 > **N measurements**: BG=5, Failover=10, Reboot=10  
@@ -19,9 +19,9 @@ workload, JDBC config, JVM flags, and analyzer are unchanged from v10
 
 | Scenario      | N   | min      | median    | mean      | p95       | max       | stdev     |
 |---------------|-----|----------|-----------|-----------|-----------|-----------|-----------|
-| Blue/Green    |   5 | 3.70 s   | 3.90 s    | 4.26 s    | 5.00 s    | 5.00 s    | 608 ms    |
-| Failover      |  10 | 4.40 s   | 10.15 s   | 9.67 s    | 14.10 s   | 15.90 s   | 3.12 s    |
-| Reboot        |  10 | 0 ms     | 6.95 s    | 6.42 s    | 8.00 s    | 8.40 s    | 2.21 s    |
+| Blue/Green    |   5 | 3.70 s   | 4.41 s    | 4.42 s    | 5.06 s    | 5.10 s    | 527 ms    |
+| Failover      |  10 | 5.90 s   | 8.20 s    | 10.81 s   | 21.78 s   | 22.50 s   | 5.63 s    |
+| Reboot        |  10 | 6.30 s   | 6.65 s    | 6.67 s    | 6.96 s    | 7.00 s    | 205 ms    |
 
 ## Per-cluster breakdown (5-cluster parallel)
 
@@ -33,30 +33,30 @@ statistical envelope, or is one slower?
 | Cluster      | N | min | median | max | stdev |
 |--------------|---|-----|--------|-----|-------|
 | test-v11-1   | 1 | 3.70 s | 3.70 s | 3.70 s | 0 ms |
-| test-v11-2   | 1 | 3.70 s | 3.70 s | 3.70 s | 0 ms |
-| test-v11-3   | 1 | 5.00 s | 5.00 s | 5.00 s | 0 ms |
-| test-v11-4   | 1 | 3.90 s | 3.90 s | 3.90 s | 0 ms |
-| test-v11-5   | 1 | 5.00 s | 5.00 s | 5.00 s | 0 ms |
+| test-v11-2   | 1 | 4.00 s | 4.00 s | 4.00 s | 0 ms |
+| test-v11-3   | 1 | 4.90 s | 4.90 s | 4.90 s | 0 ms |
+| test-v11-4   | 1 | 4.41 s | 4.41 s | 4.41 s | 0 ms |
+| test-v11-5   | 1 | 5.10 s | 5.10 s | 5.10 s | 0 ms |
 
 ### Failover per cluster
 
 | Cluster      | N | min | median | max | stdev |
 |--------------|---|-----|--------|-----|-------|
-| test-v11-1   | 2 | 4.40 s | 6.40 s | 8.40 s | 2.00 s |
-| test-v11-2   | 2 | 11.20 s | 13.55 s | 15.90 s | 2.35 s |
-| test-v11-3   | 2 | 6.80 s | 9.35 s | 11.90 s | 2.55 s |
-| test-v11-4   | 2 | 9.40 s | 10.15 s | 10.90 s | 750 ms |
-| test-v11-5   | 2 | 6.60 s | 8.90 s | 11.20 s | 2.30 s |
+| test-v11-1   | 2 | 7.40 s | 8.25 s | 9.10 s | 850 ms |
+| test-v11-2   | 2 | 7.30 s | 7.95 s | 8.60 s | 650 ms |
+| test-v11-3   | 2 | 5.90 s | 8.65 s | 11.40 s | 2.75 s |
+| test-v11-4   | 2 | 7.80 s | 14.35 s | 20.90 s | 6.55 s |
+| test-v11-5   | 2 | 7.20 s | 14.85 s | 22.50 s | 7.65 s |
 
 ### Reboot per cluster
 
 | Cluster      | N | min | median | max | stdev |
 |--------------|---|-----|--------|-----|-------|
-| test-v11-1   | 2 | 6.30 s | 6.55 s | 6.80 s | 250 ms |
-| test-v11-2   | 2 | 7.30 s | 7.35 s | 7.40 s | 50 ms |
-| test-v11-3   | 2 | 7.10 s | 7.30 s | 7.50 s | 201 ms |
-| test-v11-4   | 2 | 0 ms | 4.20 s | 8.40 s | 4.20 s |
-| test-v11-5   | 2 | 6.60 s | 6.70 s | 6.80 s | 100 ms |
+| test-v11-1   | 2 | 6.50 s | 6.75 s | 7.00 s | 249 ms |
+| test-v11-2   | 2 | 6.50 s | 6.70 s | 6.90 s | 200 ms |
+| test-v11-3   | 2 | 6.30 s | 6.60 s | 6.90 s | 300 ms |
+| test-v11-4   | 2 | 6.60 s | 6.60 s | 6.60 s | 0 ms |
+| test-v11-5   | 2 | 6.70 s | 6.70 s | 6.70 s | 0 ms |
 
 ## v11 vs v10 comparison (sanity check)
 
@@ -66,9 +66,9 @@ v10 reference numbers (production-load, single cluster, bash):
 - Reboot: median 100 ms, max 2.6 s, stdev 1.19 s
 
 v11 numbers (production-load, 5-cluster parallel, CDK):
-- BG: median 3.90 s, max 5.00 s, stdev 608 ms
-- Failover: median 10.15 s, max 15.90 s, stdev 3.12 s
-- Reboot: median 6.95 s, max 8.40 s, stdev 2.21 s
+- BG: median 4.41 s, max 5.10 s, stdev 527 ms
+- Failover: median 8.20 s, max 22.50 s, stdev 5.63 s
+- Reboot: median 6.65 s, max 7.00 s, stdev 205 ms
 
 ## Test environment
 
@@ -89,40 +89,40 @@ v11 numbers (production-load, 5-cluster parallel, CDK):
 | Cluster | Round | writeMaxMs | readMaxMs | runId |
 |---------|-------|-----------:|----------:|-------|
 | test-v11-1 | 1 | 3.70 s | 3.70 s | `test-v11-1_v11-final_v11bg_r1` |
-| test-v11-2 | 1 | 3.70 s | 3.70 s | `test-v11-2_v11-final_v11bg_r1` |
-| test-v11-3 | 1 | 5.00 s | 5.00 s | `test-v11-3_v11-final_v11bg_r1` |
-| test-v11-4 | 1 | 3.90 s | 3.90 s | `test-v11-4_v11-final_v11bg_r1` |
-| test-v11-5 | 1 | 5.00 s | 5.00 s | `test-v11-5_v11-final_v11bg_r1` |
+| test-v11-2 | 1 | 4.00 s | 4.00 s | `test-v11-2_v11-final_v11bg_r1` |
+| test-v11-3 | 1 | 4.90 s | 4.90 s | `test-v11-3_v11-final_v11bg_r1` |
+| test-v11-4 | 1 | 4.41 s | 4.41 s | `test-v11-4_v11-final_v11bg_r1` |
+| test-v11-5 | 1 | 5.10 s | 5.10 s | `test-v11-5_v11-final_v11bg_r1` |
 
 ## Failover — per-round measurements
 
 | Cluster | Round | writeMaxMs | readMaxMs | runId |
 |---------|-------|-----------:|----------:|-------|
-| test-v11-1 | 1 | 4.40 s | 4.40 s | `test-v11-1_v11-final_v11fo_r1` |
-| test-v11-1 | 2 | 8.40 s | 8.40 s | `test-v11-1_v11-final_v11fo_r2` |
-| test-v11-2 | 1 | 15.90 s | 15.90 s | `test-v11-2_v11-final_v11fo_r1` |
-| test-v11-2 | 2 | 11.20 s | 11.10 s | `test-v11-2_v11-final_v11fo_r2` |
-| test-v11-3 | 1 | 11.90 s | 11.90 s | `test-v11-3_v11-final_v11fo_r1` |
-| test-v11-3 | 2 | 6.80 s | 6.80 s | `test-v11-3_v11-final_v11fo_r2` |
-| test-v11-4 | 1 | 9.40 s | 9.30 s | `test-v11-4_v11-final_v11fo_r1` |
-| test-v11-4 | 2 | 10.90 s | 10.90 s | `test-v11-4_v11-final_v11fo_r2` |
-| test-v11-5 | 1 | 6.60 s | 6.60 s | `test-v11-5_v11-final_v11fo_r1` |
-| test-v11-5 | 2 | 11.20 s | 11.10 s | `test-v11-5_v11-final_v11fo_r2` |
+| test-v11-1 | 1 | 7.40 s | 7.40 s | `test-v11-1_v11-final_v11fo_r1` |
+| test-v11-1 | 2 | 9.10 s | 9.10 s | `test-v11-1_v11-final_v11fo_r2` |
+| test-v11-2 | 1 | 7.30 s | 7.30 s | `test-v11-2_v11-final_v11fo_r1` |
+| test-v11-2 | 2 | 8.60 s | 8.60 s | `test-v11-2_v11-final_v11fo_r2` |
+| test-v11-3 | 1 | 5.90 s | 5.90 s | `test-v11-3_v11-final_v11fo_r1` |
+| test-v11-3 | 2 | 11.40 s | 11.30 s | `test-v11-3_v11-final_v11fo_r2` |
+| test-v11-4 | 1 | 7.80 s | 7.70 s | `test-v11-4_v11-final_v11fo_r1` |
+| test-v11-4 | 2 | 20.90 s | 20.80 s | `test-v11-4_v11-final_v11fo_r2` |
+| test-v11-5 | 1 | 7.20 s | 7.20 s | `test-v11-5_v11-final_v11fo_r1` |
+| test-v11-5 | 2 | 22.50 s | 22.50 s | `test-v11-5_v11-final_v11fo_r2` |
 
 ## Reboot — per-round measurements
 
 | Cluster | Round | writeMaxMs | readMaxMs | runId |
 |---------|-------|-----------:|----------:|-------|
-| test-v11-1 | 1 | 6.80 s | 6.80 s | `test-v11-1_v11-final_v11rb_r1` |
-| test-v11-1 | 2 | 6.30 s | 6.30 s | `test-v11-1_v11-final_v11rb_r2` |
-| test-v11-2 | 1 | 7.30 s | 7.30 s | `test-v11-2_v11-final_v11rb_r1` |
-| test-v11-2 | 2 | 7.40 s | 7.40 s | `test-v11-2_v11-final_v11rb_r2` |
-| test-v11-3 | 1 | 7.10 s | 7.10 s | `test-v11-3_v11-final_v11rb_r1` |
-| test-v11-3 | 2 | 7.50 s | 7.50 s | `test-v11-3_v11-final_v11rb_r2` |
-| test-v11-4 | 1 | 8.40 s | 8.30 s | `test-v11-4_v11-final_v11rb_r1` |
-| test-v11-4 | 2 | 0 ms | 0 ms | `test-v11-4_v11-final_v11rb_r2` |
-| test-v11-5 | 1 | 6.80 s | 6.80 s | `test-v11-5_v11-final_v11rb_r1` |
-| test-v11-5 | 2 | 6.60 s | 6.60 s | `test-v11-5_v11-final_v11rb_r2` |
+| test-v11-1 | 1 | 7.00 s | 7.00 s | `test-v11-1_v11-final_v11rb_r1` |
+| test-v11-1 | 2 | 6.50 s | 6.50 s | `test-v11-1_v11-final_v11rb_r2` |
+| test-v11-2 | 1 | 6.50 s | 6.50 s | `test-v11-2_v11-final_v11rb_r1` |
+| test-v11-2 | 2 | 6.90 s | 6.80 s | `test-v11-2_v11-final_v11rb_r2` |
+| test-v11-3 | 1 | 6.30 s | 6.30 s | `test-v11-3_v11-final_v11rb_r1` |
+| test-v11-3 | 2 | 6.90 s | 6.90 s | `test-v11-3_v11-final_v11rb_r2` |
+| test-v11-4 | 1 | 6.60 s | 6.60 s | `test-v11-4_v11-final_v11rb_r1` |
+| test-v11-4 | 2 | 6.60 s | 6.60 s | `test-v11-4_v11-final_v11rb_r2` |
+| test-v11-5 | 1 | 6.70 s | 6.70 s | `test-v11-5_v11-final_v11rb_r1` |
+| test-v11-5 | 2 | 6.70 s | 6.70 s | `test-v11-5_v11-final_v11rb_r2` |
 
 ## How to reproduce (full IaC)
 
@@ -221,4 +221,4 @@ remains as the reference implementation.
 
 ---
 
-*Auto-generated from `dashboard/data/v11-only.json` (2026-05-17T13:09:36Z).*
+*Auto-generated from `dashboard/data/v11-only.json` (2026-05-18T07:20:15Z).*
