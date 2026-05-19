@@ -69,3 +69,8 @@ infra/state/
 infra/cdk/cdk.out/
 infra/cdk/.venv/
 infra/cdk/cdk.context.json
+
+# Internal PPT/presentation files (per user request, not pushed to GitHub)
+ppt/
+*.pptx
+*.ppt

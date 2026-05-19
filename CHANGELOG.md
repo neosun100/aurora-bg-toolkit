@@ -5,6 +5,84 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v12-aggressive-timeouts] - 2026-05-19
+
+> ❌ **REJECTED.** v12 tested 3 timeout reductions to see if v11's downtime
+> could be further reduced. All 3 hypotheses failed. v11 remains the
+> production-optimal config.
+
+### Tested
+- **H1**: `connectTimeout` 1000ms → 500ms (BG faster recovery)
+- **H2**: `failureDetectionTime` 6000ms → 3000ms (FO faster detection)
+- **H3**: `socketTimeout` 3000ms → 1500ms (RB faster stale conn release)
+
+### Results
+
+| Scenario | v11 | v12 | Δ |
+|---|---|---|---|
+| BG median | 4.20 s | **4.50 s** | +300 ms ❌ |
+| BG max | 4.95 s | 5.10 s | +155 ms ❌ |
+| FO median | 9.45 s | **10.35 s** | +900 ms ❌ |
+| FO max | 13.6 s | **18.5 s** | +4.9 s ❌❌ |
+| RB median | 7.10 s | **6.72 s** | -385 ms ✅ |
+| RB max | 7.40 s | **10.30 s** | +2.9 s ❌ |
+| RB stdev | 360 ms | **2,592 ms** | 7× variance ❌ |
+
+### Lessons
+
+1. **Aggressive timeouts trigger retry storms.** A 500ms `connectTimeout`
+   fires before the wrapper's topology cache is updated, marking otherwise-
+   good connections as failed.
+2. **3s `failureDetectionTime` triggers during Aurora bursts.** EFM2 starts
+   probing during normal recovery from brief writer load, racing with the
+   actual failover and producing 18.5s outliers.
+3. **1.5s `socketTimeout` aborts in-flight queries.** During reboot's brief
+   unavailability window, queries that were about to complete get killed,
+   forcing app-level retries that add 2-3s.
+4. **Median improvement is not enough.** v12's RB median improved 5%, but
+   p95/max degraded 39% with 7× higher variance. This trade is bad for
+   production.
+
+### Conclusion
+
+v11 is at a local optimum. The 3 timeouts (`connectTimeout=1000`,
+`socketTimeout=3000`, `failureDetectionTime=6000`) are not arbitrary
+defaults — they emerged from v9's hypothesis testing and are confirmed
+optimal by v12's regression. **DO NOT modify these timeouts in production.**
+
+Future optimization should focus on RDS service-side improvements, not
+client-side timeout tuning.
+
+See `docs/REPORTS/2026-05-19-v12-aggressive-timeouts.md` for full per-round data.
+
+### Tooling additions
+
+- `configs/v12-aggressive-timeouts.yaml` — v12 config (preserved as
+  cautionary reference; not for production)
+- `scripts/v12-extract-data.py` — extracts v12 measurements from
+  `e2e-results/` to `dashboard/data/v12-only.json`
+- `dashboard/assets/dashboard-v12.js` — v12 dashboard view
+- `dashboard/index.html` — added `#v12` toggle
+- `infra/orchestrate-v11.py` — added `V11_CONFIG` env var support to run
+  alternate configs through the same orchestrator (separate state files)
+- `scripts/live-status-server.py` — localhost:9999 live progress
+  dashboard with auto-refresh every 10s, no public exposure
+- `infra/v11-then-v12.sh` — chain script that auto-launches v12 after v11
+  completes
+- `svg/test-lifecycle-v11.svg` + `optimization-journey.svg` — phase-by-
+  phase timing diagram + v9 → v12 evolution timeline
+
+### Bugs found and fixed
+
+- **`_safe_delete_bg` was 12 min, needs 30+ min** — RDS BG lifecycle
+  (SWITCHOVER_COMPLETED → deletable) takes longer than expected when 5
+  clusters do this in parallel. Updated `max_minutes` from 12 to 30 in
+  `infra/orchestrate-v11.py`.
+- **`_restore_runtime_state`** added to handle resumption — when
+  `COLLECT_OUTPUTS` was already done in a previous orchestrator run, the
+  in-memory `cluster_arns`/`endpoints` were empty on restart. Now restored
+  from `progress.json` outputs + boto3 fallback.
+
 ## [v11-cdk-parallel] - 2026-05-17
 
 > v11 = full IaC migration (CDK) + 5-cluster parallel execution. The

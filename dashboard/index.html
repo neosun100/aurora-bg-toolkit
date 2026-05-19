@@ -262,6 +262,7 @@
     <p id="versionTagline">Full IaC migration. 5 clusters in parallel. Per-cluster contention analysis. <span id="genAt"></span></p>
     <div class="view-switcher">
       <a href="#v11" id="link-v11" class="active">v11 (CDK + parallel)</a>
+      <a href="#v12" id="link-v12">v12 (Aggressive Timeouts)</a>
       <a href="#v10" id="link-v10">v10 (single cluster)</a>
     </div>
   </header>
@@ -348,16 +349,19 @@
   </footer>
 </div>
 
-<!-- View loader: switches dashboard-v10.js or dashboard-v11.js based on URL hash -->
+<!-- View loader: switches dashboard-v10.js / v11.js / v12.js based on URL hash -->
 <script>
 (function () {
   // Determine view from hash; default v11
   const hash = window.location.hash.replace('#', '');
-  const view = (hash === 'v10') ? 'v10' : 'v11';
+  let view = 'v11';
+  if (hash === 'v10') view = 'v10';
+  else if (hash === 'v12') view = 'v12';
 
   // Update UI for the chosen view
   document.getElementById('link-v10').classList.toggle('active', view === 'v10');
   document.getElementById('link-v11').classList.toggle('active', view === 'v11');
+  document.getElementById('link-v12').classList.toggle('active', view === 'v12');
 
   if (view === 'v10') {
     document.getElementById('versionBadge').textContent = 'v10 · Single cluster, bash orchestrator';
@@ -371,27 +375,32 @@
     // Hide cluster column
     const head = document.getElementById('roundsHead');
     head.innerHTML = '<th>Scenario</th><th class="num">Round</th><th class="num">↓write max</th><th class="num">↓read max</th><th>Wrapper</th><th>Run ID</th>';
+  } else if (view === 'v12') {
+    document.getElementById('versionBadge').textContent = 'v12 · Aggressive Timeouts (REJECTED)';
+    document.getElementById('versionTagline').innerHTML = 'Tested 3 timeout reductions vs v11 baseline. All 3 hypotheses failed; v11 remains optimal. <span id="genAt"></span>';
+    document.title = 'Aurora BG Toolkit — v12 Aggressive Timeouts';
+    document.getElementById('configFile').textContent = 'configs/v12-aggressive-timeouts.yaml';
+    document.getElementById('footerVersion').textContent = 'v12-aggressive-timeouts';
+    document.getElementById('emptyMsg').innerHTML = 'Run: <code>V11_CONFIG=v12-aggressive-timeouts nohup python3 infra/orchestrate-v11.py &amp;</code>';
   } else {
-    // v11
+    // v11 (default)
     document.getElementById('emptyMsg').innerHTML = 'Run: <code>nohup python3 infra/orchestrate-v11.py > /tmp/v11-launch.log 2>&amp;1 &amp;</code>';
   }
 
   // Re-route the link clicks to also reload (so the right .js loads)
   document.getElementById('link-v10').addEventListener('click', function (e) {
-    if (view !== 'v10') {
-      // navigate happens via hash; need full reload to swap script
-      setTimeout(() => location.reload(), 50);
-    }
+    if (view !== 'v10') setTimeout(() => location.reload(), 50);
   });
   document.getElementById('link-v11').addEventListener('click', function (e) {
-    if (view !== 'v11') {
-      setTimeout(() => location.reload(), 50);
-    }
+    if (view !== 'v11') setTimeout(() => location.reload(), 50);
+  });
+  document.getElementById('link-v12').addEventListener('click', function (e) {
+    if (view !== 'v12') setTimeout(() => location.reload(), 50);
   });
 
   // Inject the right script
   const s = document.createElement('script');
-  s.src = `assets/dashboard-${view}.js?v=20260518-${view}-1`;
+  s.src = `assets/dashboard-${view}.js?v=20260519-${view}-1`;
   document.body.appendChild(s);
 })();
 </script>

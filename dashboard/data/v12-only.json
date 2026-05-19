@@ -1,0 +1,585 @@
+{
+  "schema": "v12-only-1",
+  "experiment": "v12-aggressive-timeouts",
+  "generatedAt": "2026-05-19T09:50:48Z",
+  "config": {
+    "name": "v12-aggressive-timeouts",
+    "yamlPath": "configs/v12-aggressive-timeouts.yaml",
+    "yaml": "# V12-AGGRESSIVE-TIMEOUTS \u2014 Hypothesis-driven timeout optimization.\n#\n# Building on v11's validated baseline, v12 tests 3 timeout reductions:\n#\n#   H1: connectTimeout 1000ms \u2192 500ms\n#       Theory: After BG switchover, stale writer IP is unreachable. Each\n#       HikariCP connection attempt waits connectTimeout before giving up.\n#       Halving this should reduce BG recovery by ~0.5-1s per pool refill cycle.\n#       Risk: wrapper 4.0.1 failover2 plugin may handle this better than v6-era\n#       wrapper 3.x which broke at 500ms.\n#\n#   H2: failureDetectionTime 6000ms \u2192 3000ms\n#       Theory: EFM2 waits failureDetectionTime before starting to probe the\n#       writer. Current 6s delay dominates FO median (8.2s \u2248 6s delay + 2s actual).\n#       Halving to 3s should bring FO median to ~5s.\n#       Risk: If Aurora writer has legitimate 3-6s stalls (GC, IO), this could\n#       trigger false-positive failover detection. Mitigated by keeping\n#       failureDetectionCount=3 (still needs 3 consecutive failures).\n#\n#   H3: socketTimeout 3000ms \u2192 1500ms\n#       Theory: In-flight queries on stale connections wait socketTimeout before\n#       timing out. At 1500ms, stale connections are released faster, allowing\n#       HikariCP to refill sooner.\n#       Risk: Slow queries > 1.5s would be killed. Our workload is simple CRUD\n#       (single-row read/insert/update), max expected query time ~50ms.\n#\n# Unchanged from v11:\n#   - Same workload (1280 ops/s, pool=50, 10Hz STATS)\n#   - Same JVM flags (DNS TTL=5, negative TTL=2)\n#   - Same plugin chain (failover2, efm2, bg)\n#   - Same HikariCP pool config\n#   - Same infrastructure (CDK, 5-cluster parallel)\n#\n# Expected results vs v11:\n#   BG: 4.4s \u2192 ~3.5s (H1 effect)\n#   FO: 8.2s \u2192 ~5.0s (H2 effect, biggest expected win)\n#   RB: 6.6s \u2192 ~5.5s (H3 effect)\n#\n# Required JVM flags:\n#   -Dnetworkaddress.cache.ttl=5\n#   -Dnetworkaddress.cache.negative.ttl=2\n#   --add-opens java.base/java.lang=ALL-UNNAMED\n#   --add-opens java.base/java.lang.reflect=ALL-UNNAMED\n#   -Xmx2g\n#\nname: v12-aggressive-timeouts\ndescription: v11 baseline + 3 timeout reductions (connectTimeout 500, failureDetectionTime 3000, socketTimeout 1500)\n\ndatabase:\n  port: 4488\n  database: demo\n  tableTemplate: \"table_${CONFIG}_${SUFFIX}\"\n  user: admin\n\njdbc:\n  wrapperPlugins:\n    - failover2\n    - efm2\n    - bg\n  bgHighMs: 50\n  # H1: connectTimeout 1000 \u2192 500ms\n  connectTimeout: 500\n  # H3: socketTimeout 3000 \u2192 1500ms\n  socketTimeout: 1500\n  # H2: failureDetectionTime 6000 \u2192 3000ms\n  failureDetectionTime: 3000\n  failureDetectionInterval: 1000\n  failureDetectionCount: 3\n  wrapperLoggerLevel: INFO\n\nhikari:\n  maximumPoolSize: 50\n  minimumIdle: 50\n  initializationFailTimeout: -1\n  connectionTimeoutMs: 5000\n  idleTimeoutMs: 30000\n  maxLifetimeMs: 60000\n  keepaliveTimeMs: 60000\n  validationTimeoutMs: 5000\n  connectionInitSql: \"select 1 from dual\"\n  connectionTestQuery: \"SELECT 1\"\n  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException\n\nworkload:\n  threads: 64\n  intervalMs: 50\n  weights:\n    read: 9\n    insert: 2\n    update: 1\n  retry:\n    enabled: true\n    delayMs: 25\n  statsReporterHz: 10\n",
+    "highlights": [
+      {
+        "name": "Config",
+        "value": "v12-aggressive-timeouts",
+        "rationale": "Tests 3 timeout reductions vs v11 baseline"
+      },
+      {
+        "name": "connectTimeout",
+        "value": "500ms (vs v11 1000ms)",
+        "rationale": "H1: faster TCP timeout \u2192 faster BG recovery"
+      },
+      {
+        "name": "failureDetectionTime",
+        "value": "3000ms (vs v11 6000ms)",
+        "rationale": "H2: faster EFM2 detection \u2192 faster FO"
+      },
+      {
+        "name": "socketTimeout",
+        "value": "1500ms (vs v11 3000ms)",
+        "rationale": "H3: faster stale connection release \u2192 faster RB"
+      },
+      {
+        "name": "Workload",
+        "value": "1280 ops/s, pool=50",
+        "rationale": "Same as v11"
+      },
+      {
+        "name": "Parallelism",
+        "value": "5 clusters in parallel",
+        "rationale": "Same as v11 (CDK + ThreadPoolExecutor)"
+      }
+    ]
+  },
+  "scenarios": {
+    "blue-green": {
+      "scenario": "blue-green",
+      "rounds": [
+        {
+          "cluster": "test-v11-1",
+          "round": 1,
+          "writeMaxMs": 4000,
+          "readMaxMs": 4000,
+          "runId": "test-v11-1_v12-aggressive-timeouts_v11bg_r1",
+          "directory": "e2e-results/v11-blue-green-test-v11-1-r1_20260519_051111",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-2",
+          "round": 1,
+          "writeMaxMs": 5100,
+          "readMaxMs": 5100,
+          "runId": "test-v11-2_v12-aggressive-timeouts_v11bg_r1",
+          "directory": "e2e-results/v11-blue-green-test-v11-2-r1_20260519_051255",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-3",
+          "round": 1,
+          "writeMaxMs": 4501,
+          "readMaxMs": 4501,
+          "runId": "test-v11-3_v12-aggressive-timeouts_v11bg_r1",
+          "directory": "e2e-results/v11-blue-green-test-v11-3-r1_20260519_050939",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-5",
+          "round": 1,
+          "writeMaxMs": 4500,
+          "readMaxMs": 4500,
+          "runId": "test-v11-5_v12-aggressive-timeouts_v11bg_r1",
+          "directory": "e2e-results/v11-blue-green-test-v11-5-r1_20260519_050839",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        }
+      ],
+      "samples": [
+        4000,
+        5100,
+        4501,
+        4500
+      ],
+      "readSamples": [
+        4000,
+        5100,
+        4501,
+        4500
+      ],
+      "writeStats": {
+        "n": 4,
+        "min": 4000,
+        "max": 5100,
+        "median": 4500.5,
+        "mean": 4525.2,
+        "q1": 4500,
+        "q3": 5100,
+        "p95": 5100,
+        "stdev": 450.0
+      },
+      "readStats": {
+        "n": 4,
+        "min": 4000,
+        "max": 5100,
+        "median": 4500.5,
+        "mean": 4525.2,
+        "q1": 4500,
+        "q3": 5100,
+        "p95": 5100,
+        "stdev": 450.0
+      },
+      "byCluster": {
+        "test-v11-1": {
+          "n": 1,
+          "min": 4000,
+          "max": 4000,
+          "median": 4000,
+          "mean": 4000.0,
+          "q1": 4000,
+          "q3": 4000,
+          "p95": 4000,
+          "stdev": 0
+        },
+        "test-v11-2": {
+          "n": 1,
+          "min": 5100,
+          "max": 5100,
+          "median": 5100,
+          "mean": 5100.0,
+          "q1": 5100,
+          "q3": 5100,
+          "p95": 5100,
+          "stdev": 0
+        },
+        "test-v11-3": {
+          "n": 1,
+          "min": 4501,
+          "max": 4501,
+          "median": 4501,
+          "mean": 4501.0,
+          "q1": 4501,
+          "q3": 4501,
+          "p95": 4501,
+          "stdev": 0
+        },
+        "test-v11-5": {
+          "n": 1,
+          "min": 4500,
+          "max": 4500,
+          "median": 4500,
+          "mean": 4500.0,
+          "q1": 4500,
+          "q3": 4500,
+          "p95": 4500,
+          "stdev": 0
+        }
+      }
+    },
+    "failover": {
+      "scenario": "failover",
+      "rounds": [
+        {
+          "cluster": "test-v11-1",
+          "round": 1,
+          "writeMaxMs": 18500,
+          "readMaxMs": 18400,
+          "runId": "test-v11-1_v12-aggressive-timeouts_v11fo_r1",
+          "directory": "e2e-results/v11-failover-test-v11-1-r1_20260519_055436",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-1",
+          "round": 2,
+          "writeMaxMs": 8700,
+          "readMaxMs": 8700,
+          "runId": "test-v11-1_v12-aggressive-timeouts_v11fo_r2",
+          "directory": "e2e-results/v11-failover-test-v11-1-r2_20260519_055817",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-2",
+          "round": 1,
+          "writeMaxMs": 15500,
+          "readMaxMs": 15500,
+          "runId": "test-v11-2_v12-aggressive-timeouts_v11fo_r1",
+          "directory": "e2e-results/v11-failover-test-v11-2-r1_20260519_055455",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-2",
+          "round": 2,
+          "writeMaxMs": 11500,
+          "readMaxMs": 11400,
+          "runId": "test-v11-2_v12-aggressive-timeouts_v11fo_r2",
+          "directory": "e2e-results/v11-failover-test-v11-2-r2_20260519_055824",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-3",
+          "round": 1,
+          "writeMaxMs": 9400,
+          "readMaxMs": 9400,
+          "runId": "test-v11-3_v12-aggressive-timeouts_v11fo_r1",
+          "directory": "e2e-results/v11-failover-test-v11-3-r1_20260519_055429",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-3",
+          "round": 2,
+          "writeMaxMs": 7800,
+          "readMaxMs": 7800,
+          "runId": "test-v11-3_v12-aggressive-timeouts_v11fo_r2",
+          "directory": "e2e-results/v11-failover-test-v11-3-r2_20260519_055805",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-4",
+          "round": 1,
+          "writeMaxMs": 7100,
+          "readMaxMs": 7000,
+          "runId": "test-v11-4_v12-aggressive-timeouts_v11fo_r1",
+          "directory": "e2e-results/v11-failover-test-v11-4-r1_20260519_044448",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-4",
+          "round": 2,
+          "writeMaxMs": 11300,
+          "readMaxMs": 11300,
+          "runId": "test-v11-4_v12-aggressive-timeouts_v11fo_r2",
+          "directory": "e2e-results/v11-failover-test-v11-4-r2_20260519_044809",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-5",
+          "round": 1,
+          "writeMaxMs": 7300,
+          "readMaxMs": 7300,
+          "runId": "test-v11-5_v12-aggressive-timeouts_v11fo_r1",
+          "directory": "e2e-results/v11-failover-test-v11-5-r1_20260519_055451",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-5",
+          "round": 2,
+          "writeMaxMs": 11600,
+          "readMaxMs": 11500,
+          "runId": "test-v11-5_v12-aggressive-timeouts_v11fo_r2",
+          "directory": "e2e-results/v11-failover-test-v11-5-r2_20260519_055815",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        }
+      ],
+      "samples": [
+        18500,
+        8700,
+        15500,
+        11500,
+        9400,
+        7800,
+        7100,
+        11300,
+        7300,
+        11600
+      ],
+      "readSamples": [
+        18400,
+        8700,
+        15500,
+        11400,
+        9400,
+        7800,
+        7000,
+        11300,
+        7300,
+        11500
+      ],
+      "writeStats": {
+        "n": 10,
+        "min": 7100,
+        "max": 18500,
+        "median": 10350.0,
+        "mean": 10870.0,
+        "q1": 7800,
+        "q3": 11600,
+        "p95": 18500,
+        "stdev": 3712.2
+      },
+      "readStats": {
+        "n": 10,
+        "min": 7000,
+        "max": 18400,
+        "median": 10350.0,
+        "mean": 10830.0,
+        "q1": 7800,
+        "q3": 11500,
+        "p95": 18400,
+        "stdev": 3696.9
+      },
+      "byCluster": {
+        "test-v11-1": {
+          "n": 2,
+          "min": 8700,
+          "max": 18500,
+          "median": 13600.0,
+          "mean": 13600.0,
+          "q1": 8700,
+          "q3": 18500,
+          "p95": 18500,
+          "stdev": 6929.6
+        },
+        "test-v11-2": {
+          "n": 2,
+          "min": 11500,
+          "max": 15500,
+          "median": 13500.0,
+          "mean": 13500.0,
+          "q1": 11500,
+          "q3": 15500,
+          "p95": 15500,
+          "stdev": 2828.4
+        },
+        "test-v11-3": {
+          "n": 2,
+          "min": 7800,
+          "max": 9400,
+          "median": 8600.0,
+          "mean": 8600.0,
+          "q1": 7800,
+          "q3": 9400,
+          "p95": 9400,
+          "stdev": 1131.4
+        },
+        "test-v11-5": {
+          "n": 2,
+          "min": 7300,
+          "max": 11600,
+          "median": 9450.0,
+          "mean": 9450.0,
+          "q1": 7300,
+          "q3": 11600,
+          "p95": 11600,
+          "stdev": 3040.6
+        },
+        "test-v11-4": {
+          "n": 2,
+          "min": 7100,
+          "max": 11300,
+          "median": 9200.0,
+          "mean": 9200.0,
+          "q1": 7100,
+          "q3": 11300,
+          "p95": 11300,
+          "stdev": 2969.8
+        }
+      }
+    },
+    "reboot": {
+      "scenario": "reboot",
+      "rounds": [
+        {
+          "cluster": "test-v11-1",
+          "round": 1,
+          "writeMaxMs": 7200,
+          "readMaxMs": 7100,
+          "runId": "test-v11-1_v12-aggressive-timeouts_v11rb_r1",
+          "directory": "e2e-results/v11-reboot-test-v11-1-r1_20260519_060109",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-1",
+          "round": 2,
+          "writeMaxMs": 7300,
+          "readMaxMs": 7300,
+          "runId": "test-v11-1_v12-aggressive-timeouts_v11rb_r2",
+          "directory": "e2e-results/v11-reboot-test-v11-1-r2_20260519_060359",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-2",
+          "round": 1,
+          "writeMaxMs": 8800,
+          "readMaxMs": 8700,
+          "runId": "test-v11-2_v12-aggressive-timeouts_v11rb_r1",
+          "directory": "e2e-results/v11-reboot-test-v11-2-r1_20260519_060122",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-2",
+          "round": 2,
+          "writeMaxMs": 200,
+          "readMaxMs": 0,
+          "runId": "test-v11-2_v12-aggressive-timeouts_v11rb_r2",
+          "directory": "e2e-results/v11-reboot-test-v11-2-r2_20260519_060416",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-3",
+          "round": 1,
+          "writeMaxMs": 6500,
+          "readMaxMs": 6500,
+          "runId": "test-v11-3_v12-aggressive-timeouts_v11rb_r1",
+          "directory": "e2e-results/v11-reboot-test-v11-3-r1_20260519_060133",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-3",
+          "round": 2,
+          "writeMaxMs": 6630,
+          "readMaxMs": 6500,
+          "runId": "test-v11-3_v12-aggressive-timeouts_v11rb_r2",
+          "directory": "e2e-results/v11-reboot-test-v11-3-r2_20260519_060434",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-4",
+          "round": 1,
+          "writeMaxMs": 6300,
+          "readMaxMs": 6300,
+          "runId": "test-v11-4_v12-aggressive-timeouts_v11rb_r1",
+          "directory": "e2e-results/v11-reboot-test-v11-4-r1_20260519_045114",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-4",
+          "round": 2,
+          "writeMaxMs": 10300,
+          "readMaxMs": 10300,
+          "runId": "test-v11-4_v12-aggressive-timeouts_v11rb_r2",
+          "directory": "e2e-results/v11-reboot-test-v11-4-r2_20260519_045404",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-5",
+          "round": 1,
+          "writeMaxMs": 6500,
+          "readMaxMs": 6500,
+          "runId": "test-v11-5_v12-aggressive-timeouts_v11rb_r1",
+          "directory": "e2e-results/v11-reboot-test-v11-5-r1_20260519_060106",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        },
+        {
+          "cluster": "test-v11-5",
+          "round": 2,
+          "writeMaxMs": 6800,
+          "readMaxMs": 6800,
+          "runId": "test-v11-5_v12-aggressive-timeouts_v11rb_r2",
+          "directory": "e2e-results/v11-reboot-test-v11-5-r2_20260519_060358",
+          "statsCount": 0,
+          "detectedPeriodMs": 0
+        }
+      ],
+      "samples": [
+        7200,
+        7300,
+        8800,
+        200,
+        6500,
+        6630,
+        6300,
+        10300,
+        6500,
+        6800
+      ],
+      "readSamples": [
+        7100,
+        7300,
+        8700,
+        0,
+        6500,
+        6500,
+        6300,
+        10300,
+        6500,
+        6800
+      ],
+      "writeStats": {
+        "n": 10,
+        "min": 200,
+        "max": 10300,
+        "median": 6715.0,
+        "mean": 6653.0,
+        "q1": 6500,
+        "q3": 7300,
+        "p95": 10300,
+        "stdev": 2591.9
+      },
+      "readStats": {
+        "n": 10,
+        "min": 0,
+        "max": 10300,
+        "median": 6650.0,
+        "mean": 6600.0,
+        "q1": 6500,
+        "q3": 7300,
+        "p95": 10300,
+        "stdev": 2636.5
+      },
+      "byCluster": {
+        "test-v11-1": {
+          "n": 2,
+          "min": 7200,
+          "max": 7300,
+          "median": 7250.0,
+          "mean": 7250.0,
+          "q1": 7200,
+          "q3": 7300,
+          "p95": 7300,
+          "stdev": 70.7
+        },
+        "test-v11-2": {
+          "n": 2,
+          "min": 200,
+          "max": 8800,
+          "median": 4500.0,
+          "mean": 4500.0,
+          "q1": 200,
+          "q3": 8800,
+          "p95": 8800,
+          "stdev": 6081.1
+        },
+        "test-v11-3": {
+          "n": 2,
+          "min": 6500,
+          "max": 6630,
+          "median": 6565.0,
+          "mean": 6565.0,
+          "q1": 6500,
+          "q3": 6630,
+          "p95": 6630,
+          "stdev": 91.9
+        },
+        "test-v11-5": {
+          "n": 2,
+          "min": 6500,
+          "max": 6800,
+          "median": 6650.0,
+          "mean": 6650.0,
+          "q1": 6500,
+          "q3": 6800,
+          "p95": 6800,
+          "stdev": 212.1
+        },
+        "test-v11-4": {
+          "n": 2,
+          "min": 6300,
+          "max": 10300,
+          "median": 8300.0,
+          "mean": 8300.0,
+          "q1": 6300,
+          "q3": 10300,
+          "p95": 10300,
+          "stdev": 2828.4
+        }
+      }
+    }
+  }
+}

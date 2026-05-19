@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 800" font-family="-apple-system,'SF Pro Display',system-ui,sans-serif">
+<style>
+.title{font-size:30px;font-weight:700;fill:#f5f5f7}
+.subtitle{font-size:14px;fill:#86868b}
+.version{font-size:24px;font-weight:700;fill:#fff}
+.label{font-size:13px;fill:#fff;font-weight:600}
+.detail{font-size:11px;fill:#fff;opacity:0.85}
+.metric{font-size:14px;font-weight:700;fill:#fff;font-family:'SF Mono',monospace}
+.scenario-label{font-size:11px;fill:#86868b;font-weight:600}
+</style>
+<rect width="1400" height="800" fill="#000"/>
+
+<!-- Title -->
+<text x="60" y="50" class="title">Aurora Downtime Optimization Journey — v9 → v12</text>
+<text x="60" y="74" class="subtitle">5 months · 162 measurements · v11 emerged as production-optimal</text>
+
+<!-- Timeline header -->
+<text x="60" y="125" class="scenario-label">VERSION</text>
+<text x="290" y="125" class="scenario-label">PROBLEM / HYPOTHESIS</text>
+<text x="650" y="125" class="scenario-label">PARAMETERS CHANGED</text>
+<text x="1010" y="125" class="scenario-label">RESULT (BG · FO · RB median)</text>
+
+<line x1="60" y1="135" x2="1340" y2="135" stroke="#1f1f24" stroke-width="1"/>
+
+<!-- v9 -->
+<g transform="translate(0,160)">
+  <rect x="60" y="0" width="200" height="100" rx="10" fill="#374151"/>
+  <text x="160" y="35" class="version" text-anchor="middle">v9</text>
+  <text x="160" y="58" class="label" text-anchor="middle">Tuned (multi-lever)</text>
+  <text x="160" y="78" class="detail" text-anchor="middle">2026-05-11</text>
+  <text x="160" y="92" class="detail" text-anchor="middle">120 measurements</text>
+
+  <text x="290" y="20" class="label">Test 5 hypotheses in one config</text>
+  <text x="290" y="40" class="detail" fill="#86868b">H1: JVM DNS TTL=5s ✅</text>
+  <text x="290" y="56" class="detail" fill="#86868b">H2: connectionInitSql=null ❌</text>
+  <text x="290" y="72" class="detail" fill="#86868b">H3: bgConnectTimeoutMs=5000 ❌ (regresses FO)</text>
+  <text x="290" y="88" class="detail" fill="#86868b">H4: wrapper 4.0.1 (no diff) · H5: maxLifetime=5min ❌</text>
+
+  <rect x="650" y="10" width="320" height="80" rx="6" fill="#1d4ed8" opacity="0.3"/>
+  <text x="660" y="32" class="detail" fill="#7dd3fc">+ JVM -Dnetworkaddress.cache.ttl=5</text>
+  <text x="660" y="50" class="detail" fill="#7dd3fc">+ STATS reporter 10Hz (vs 1Hz)</text>
+  <text x="660" y="68" class="detail" fill="#fda4af">- bgConnectTimeoutMs=5000 (rejected)</text>
+  <text x="660" y="86" class="detail" fill="#fda4af">- maxLifetime=300000 (rejected)</text>
+
+  <rect x="1010" y="10" width="320" height="80" rx="6" fill="#0d0d0f" stroke="#1f1f24"/>
+  <text x="1020" y="32" class="metric" fill="#86efac">BG: 3.8s</text>
+  <text x="1130" y="32" class="metric" fill="#fdba74">FO: 8.0s</text>
+  <text x="1240" y="32" class="metric" fill="#67e8f9">RB: 100ms</text>
+  <text x="1020" y="55" class="detail">Low load (40 ops/s) — production behavior unknown</text>
+  <text x="1020" y="73" class="detail" fill="#86868b">Discovered DNS TTL=5 is the killer feature for RB</text>
+</g>
+
+<!-- v10 -->
+<g transform="translate(0,290)">
+  <rect x="60" y="0" width="200" height="100" rx="10" fill="#1d4ed8"/>
+  <text x="160" y="35" class="version" text-anchor="middle">v10</text>
+  <text x="160" y="58" class="label" text-anchor="middle">Production load</text>
+  <text x="160" y="78" class="detail" text-anchor="middle">2026-05-17</text>
+  <text x="160" y="92" class="detail" text-anchor="middle">30 measurements (~7h)</text>
+
+  <text x="290" y="20" class="label">Reproduce HSK customer's 30-60s problem</text>
+  <text x="290" y="40" class="detail" fill="#86868b">Confirmed: low-load v9 hides production tail</text>
+  <text x="290" y="56" class="detail" fill="#86868b">Bash orchestrator + single cluster + 1280 ops/s</text>
+  <text x="290" y="72" class="detail" fill="#86868b">39-phase resumable; survives laptop sleep</text>
+  <text x="290" y="88" class="detail" fill="#86868b">Self-contained dashboard + auto-generated report</text>
+
+  <rect x="650" y="10" width="320" height="80" rx="6" fill="#1d4ed8" opacity="0.3"/>
+  <text x="660" y="32" class="detail" fill="#7dd3fc">+ workload 40 → 1280 ops/s (32×)</text>
+  <text x="660" y="50" class="detail" fill="#7dd3fc">+ pool=50 (production-grade)</text>
+  <text x="660" y="68" class="detail" fill="#7dd3fc">+ keep v9 H1 (DNS TTL=5)</text>
+  <text x="660" y="86" class="detail" fill="#7dd3fc">+ revert v9 H3, H5 (proven harmful)</text>
+
+  <rect x="1010" y="10" width="320" height="80" rx="6" fill="#0d0d0f" stroke="#dc2626"/>
+  <text x="1020" y="32" class="metric" fill="#86efac">BG: 5.05s</text>
+  <text x="1140" y="32" class="metric" fill="#fdba74">FO: 7.75s</text>
+  <text x="1250" y="32" class="metric" fill="#67e8f9">RB: 100ms</text>
+  <text x="1020" y="55" class="detail" fill="#fda4af">⚠️ BG max 21s — 30% outlier rate</text>
+  <text x="1020" y="73" class="detail" fill="#86868b">Reproduced customer pain. Production timeout</text>
+  <text x="1020" y="91" class="detail" fill="#86868b">must be ≥25s, not 5-10s as docs suggest</text>
+</g>
+
+<!-- v11 (highlight as RECOMMENDED) -->
+<g transform="translate(0,420)">
+  <rect x="60" y="0" width="200" height="100" rx="10" fill="#16a34a"/>
+  <text x="160" y="35" class="version" text-anchor="middle">v11 🏆</text>
+  <text x="160" y="58" class="label" text-anchor="middle">CDK + parallel</text>
+  <text x="160" y="78" class="detail" text-anchor="middle">2026-05-17/19</text>
+  <text x="160" y="92" class="detail" text-anchor="middle">25 measurements (~2h)</text>
+
+  <text x="290" y="20" class="label">Full IaC + 5-cluster parallel execution</text>
+  <text x="290" y="40" class="detail" fill="#86868b">Same workload as v10 but 5 clusters in parallel</text>
+  <text x="290" y="56" class="detail" fill="#86868b">CDK replaces bash; Python orchestrator + ThreadPool</text>
+  <text x="290" y="72" class="detail" fill="#86868b">_safe_delete_bg fix for RDS BG lifecycle race</text>
+  <text x="290" y="88" class="detail" fill="#86868b">Live status dashboard (localhost:9999)</text>
+
+  <rect x="650" y="10" width="320" height="80" rx="6" fill="#16a34a" opacity="0.3"/>
+  <text x="660" y="32" class="detail" fill="#86efac">SAME JDBC/HikariCP as v10</text>
+  <text x="660" y="50" class="detail" fill="#86efac">+ 5 cluster parallel orchestration</text>
+  <text x="660" y="68" class="detail" fill="#86efac">+ Xmx2g (was 4g, 5 java/host)</text>
+  <text x="660" y="86" class="detail" fill="#86efac">CONFIRMS v10 outliers were time-dependent</text>
+
+  <rect x="1010" y="10" width="320" height="80" rx="6" fill="#0d0d0f" stroke="#16a34a" stroke-width="2"/>
+  <text x="1020" y="32" class="metric" fill="#86efac">BG: 4.20s</text>
+  <text x="1140" y="32" class="metric" fill="#fdba74">FO: 9.45s</text>
+  <text x="1250" y="32" class="metric" fill="#67e8f9">RB: 7.10s</text>
+  <text x="1020" y="55" class="detail" fill="#86efac">✅ BG no outliers (max 4.95s vs v10's 21s)</text>
+  <text x="1020" y="73" class="detail" fill="#fda4af">⚠️ RB now 7s (was 100ms) — 5-client parallel cost</text>
+  <text x="1020" y="91" class="detail" fill="#86efac">PRODUCTION RECOMMENDED</text>
+</g>
+
+<!-- v12 (rejected) -->
+<g transform="translate(0,550)">
+  <rect x="60" y="0" width="200" height="100" rx="10" fill="#dc2626"/>
+  <text x="160" y="35" class="version" text-anchor="middle">v12</text>
+  <text x="160" y="58" class="label" text-anchor="middle">Aggressive timeouts</text>
+  <text x="160" y="78" class="detail" text-anchor="middle">2026-05-19</text>
+  <text x="160" y="92" class="detail" text-anchor="middle">REJECTED</text>
+
+  <text x="290" y="20" class="label">3 timeout reductions vs v11 baseline</text>
+  <text x="290" y="40" class="detail" fill="#86868b">H1: connectTimeout 1000→500ms ❌</text>
+  <text x="290" y="56" class="detail" fill="#86868b">H2: failureDetectionTime 6000→3000ms ❌</text>
+  <text x="290" y="72" class="detail" fill="#86868b">H3: socketTimeout 3000→1500ms ❌</text>
+  <text x="290" y="88" class="detail" fill="#fda4af">All 3 hypotheses failed — same pattern as v9 H3</text>
+
+  <rect x="650" y="10" width="320" height="80" rx="6" fill="#dc2626" opacity="0.3"/>
+  <text x="660" y="32" class="detail" fill="#fda4af">- connectTimeout 1000 → 500ms</text>
+  <text x="660" y="50" class="detail" fill="#fda4af">- failureDetectionTime 6000 → 3000ms</text>
+  <text x="660" y="68" class="detail" fill="#fda4af">- socketTimeout 3000 → 1500ms</text>
+  <text x="660" y="86" class="detail" fill="#86efac">Lesson: aggressive timeouts trigger retry storms</text>
+
+  <rect x="1010" y="10" width="320" height="80" rx="6" fill="#0d0d0f" stroke="#dc2626"/>
+  <text x="1020" y="32" class="metric" fill="#fda4af">BG: 4.50s</text>
+  <text x="1140" y="32" class="metric" fill="#fda4af">FO: 10.35s</text>
+  <text x="1250" y="32" class="metric" fill="#fda4af">RB: 6.72s</text>
+  <text x="1020" y="55" class="detail" fill="#fda4af">FO max 18.5s (vs v11 13.6s) — significant regression</text>
+  <text x="1020" y="73" class="detail" fill="#fda4af">RB max 10.3s (vs v11 7.4s) — high variance</text>
+  <text x="1020" y="91" class="detail" fill="#86efac">v11 confirmed at local optimum — DO NOT REDUCE TIMEOUTS</text>
+</g>
+
+<!-- Bottom summary -->
+<rect x="60" y="700" width="1280" height="80" rx="10" fill="#0d0d0f" stroke="#7c3aed" stroke-width="2"/>
+<text x="700" y="725" font-size="14px" fill="#86868b" text-anchor="middle">Final v11 production-optimal config (DO NOT modify these timeouts)</text>
+<text x="700" y="755" font-size="18px" fill="#bf5af2" text-anchor="middle" font-family="'SF Mono',monospace" font-weight="700">connectTimeout=1000  socketTimeout=3000  failureDetectionTime=6000  pool=50  -Dnetworkaddress.cache.ttl=5</text>
+</svg>

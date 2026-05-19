@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" font-family="-apple-system,'SF Pro Display',system-ui,sans-serif">
+<style>
+.title{font-size:28px;font-weight:700;fill:#f5f5f7}
+.subtitle{font-size:14px;fill:#86868b}
+.phase-title{font-size:16px;font-weight:700;fill:#fff}
+.phase-sub{font-size:11px;fill:#fff;opacity:0.85}
+.phase-time{font-size:18px;font-weight:700;fill:#fff;font-family:'SF Mono',monospace}
+.label{font-size:13px;fill:#f5f5f7;font-weight:600}
+.detail{font-size:11px;fill:#86868b}
+.detail-bold{font-size:11px;fill:#f5f5f7;font-weight:600}
+.arrow{fill:none;stroke:#86868b;stroke-width:2;stroke-linecap:round}
+.section-label{font-size:12px;fill:#86868b;font-weight:600;text-transform:uppercase;letter-spacing:0.08em}
+</style>
+<rect width="1200" height="800" fill="#000"/>
+
+<!-- Title -->
+<text x="60" y="50" class="title">Aurora BG Toolkit — Single Test Run Lifecycle</text>
+<text x="60" y="74" class="subtitle">v11 production reference · 5 clusters in parallel · ~2h wall clock for 30 measurements</text>
+
+<!-- Section: SETUP -->
+<text x="60" y="115" class="section-label">SETUP — ~16 min</text>
+
+<!-- Phase 1: PRECHECK + BUILD + BOOTSTRAP -->
+<rect x="60" y="130" width="180" height="80" rx="10" fill="#1d4ed8"/>
+<text x="150" y="155" class="phase-title" text-anchor="middle">① Pre-flight</text>
+<text x="150" y="172" class="phase-sub" text-anchor="middle">deps + maven build</text>
+<text x="150" y="186" class="phase-sub" text-anchor="middle">+ cdk bootstrap</text>
+<text x="150" y="202" class="phase-time" text-anchor="middle">~1 min</text>
+
+<path d="M240 170 L280 170" class="arrow" marker-end="url(#arr)"/>
+
+<!-- Phase 2: CDK DEPLOY -->
+<rect x="280" y="130" width="220" height="80" rx="10" fill="#7c3aed"/>
+<text x="390" y="155" class="phase-title" text-anchor="middle">② CDK Deploy</text>
+<text x="390" y="172" class="phase-sub" text-anchor="middle">7 stacks parallel</text>
+<text x="390" y="186" class="phase-sub" text-anchor="middle">5 Aurora + 1 EC2 + VPC</text>
+<text x="390" y="202" class="phase-time" text-anchor="middle">~14 min</text>
+
+<path d="M500 170 L540 170" class="arrow" marker-end="url(#arr)"/>
+
+<!-- Phase 3: COLLECT + EC2 PROVISION -->
+<rect x="540" y="130" width="180" height="80" rx="10" fill="#1d4ed8"/>
+<text x="630" y="155" class="phase-title" text-anchor="middle">③ Provision</text>
+<text x="630" y="172" class="phase-sub" text-anchor="middle">collect outputs +</text>
+<text x="630" y="186" class="phase-sub" text-anchor="middle">SSH + upload jar</text>
+<text x="630" y="202" class="phase-time" text-anchor="middle">~30 sec</text>
+
+<!-- Section: TEST -->
+<text x="60" y="265" class="section-label">TEST_PARALLEL — ~90 min (5-cluster parallel)</text>
+
+<!-- Cluster lanes -->
+<g id="lanes">
+  <!-- BG block (largest) -->
+  <rect x="60" y="285" width="380" height="100" rx="10" fill="#16a34a"/>
+  <text x="250" y="312" class="phase-title" text-anchor="middle">④ BG Round 1+2 — per cluster</text>
+  <text x="250" y="332" class="phase-sub" text-anchor="middle">create BG (22 min) → switchover (5 min)</text>
+  <text x="250" y="348" class="phase-sub" text-anchor="middle">_safe_delete_bg wait (15-30 min)</text>
+  <text x="250" y="376" class="phase-time" text-anchor="middle">~70 min</text>
+
+  <!-- FO block -->
+  <rect x="450" y="285" width="180" height="100" rx="10" fill="#ea580c"/>
+  <text x="540" y="312" class="phase-title" text-anchor="middle">⑤ Failover R1+R2</text>
+  <text x="540" y="332" class="phase-sub" text-anchor="middle">trigger writer demote</text>
+  <text x="540" y="348" class="phase-sub" text-anchor="middle">measure write_ok=0 gap</text>
+  <text x="540" y="376" class="phase-time" text-anchor="middle">~12 min</text>
+
+  <!-- RB block -->
+  <rect x="640" y="285" width="180" height="100" rx="10" fill="#06b6d4"/>
+  <text x="730" y="312" class="phase-title" text-anchor="middle">⑥ Reboot R1+R2</text>
+  <text x="730" y="332" class="phase-sub" text-anchor="middle">writer instance reboot</text>
+  <text x="730" y="348" class="phase-sub" text-anchor="middle">measure write_ok=0 gap</text>
+  <text x="730" y="376" class="phase-time" text-anchor="middle">~8 min</text>
+</g>
+
+<!-- Cluster annotation -->
+<text x="855" y="320" class="label">5 clusters in parallel</text>
+<text x="855" y="338" class="detail">test-v11-1 ─┐</text>
+<text x="855" y="354" class="detail">test-v11-2 ─┤</text>
+<text x="855" y="370" class="detail">test-v11-3 ─┼─ ThreadPoolExecutor(5)</text>
+<text x="855" y="386" class="detail">test-v11-4 ─┤</text>
+<text x="855" y="402" class="detail">test-v11-5 ─┘</text>
+
+<!-- Section: WRAP-UP -->
+<text x="60" y="440" class="section-label">WRAP-UP — ~16 min</text>
+
+<rect x="60" y="455" width="180" height="80" rx="10" fill="#1d4ed8"/>
+<text x="150" y="480" class="phase-title" text-anchor="middle">⑦ Analyze</text>
+<text x="150" y="497" class="phase-sub" text-anchor="middle">parse 30 stats logs</text>
+<text x="150" y="511" class="phase-sub" text-anchor="middle">aggregate JSON</text>
+<text x="150" y="527" class="phase-time" text-anchor="middle">~1 min</text>
+
+<path d="M240 495 L280 495" class="arrow" marker-end="url(#arr)"/>
+
+<rect x="280" y="455" width="180" height="80" rx="10" fill="#1d4ed8"/>
+<text x="370" y="480" class="phase-title" text-anchor="middle">⑧ Report</text>
+<text x="370" y="497" class="phase-sub" text-anchor="middle">generate markdown</text>
+<text x="370" y="511" class="phase-sub" text-anchor="middle">+ dashboard data</text>
+<text x="370" y="527" class="phase-time" text-anchor="middle">~1 sec</text>
+
+<path d="M460 495 L500 495" class="arrow" marker-end="url(#arr)"/>
+
+<rect x="500" y="455" width="220" height="80" rx="10" fill="#dc2626"/>
+<text x="610" y="480" class="phase-title" text-anchor="middle">⑨ CDK Destroy</text>
+<text x="610" y="497" class="phase-sub" text-anchor="middle">delete BGs (safe-retry) +</text>
+<text x="610" y="511" class="phase-sub" text-anchor="middle">teardown 7 stacks</text>
+<text x="610" y="527" class="phase-time" text-anchor="middle">~14 min</text>
+
+<!-- Total time box -->
+<rect x="780" y="455" width="360" height="80" rx="10" fill="#1f2937" stroke="#7c3aed" stroke-width="2"/>
+<text x="960" y="482" class="label" text-anchor="middle">⏱ Total wall-clock time</text>
+<text x="960" y="510" font-size="32px" font-weight="700" fill="#7c3aed" text-anchor="middle" font-family="'SF Mono',monospace">~2h 10min</text>
+<text x="960" y="528" class="detail" text-anchor="middle">for 30 measurements (5 BG + 10 FO + 10 RB)</text>
+
+<!-- Bottom: cost breakdown -->
+<text x="60" y="585" class="section-label">COST &amp; OBSERVABILITY</text>
+
+<rect x="60" y="605" width="240" height="160" rx="10" fill="#0d0d0f" stroke="#1f1f24"/>
+<text x="180" y="630" class="label" text-anchor="middle">AWS cost per run</text>
+<text x="180" y="660" font-size="28px" font-weight="700" fill="#30d158" text-anchor="middle" font-family="'SF Mono',monospace">~$5 USD</text>
+<text x="180" y="685" class="detail" text-anchor="middle">5 × Aurora r7g.large + t3.medium</text>
+<text x="180" y="700" class="detail" text-anchor="middle">1 × EC2 c6i.2xlarge + storage</text>
+<text x="180" y="720" class="detail-bold" text-anchor="middle">Zero residual cost</text>
+<text x="180" y="735" class="detail" text-anchor="middle">(CDK destroy cleans 100%)</text>
+
+<rect x="320" y="605" width="240" height="160" rx="10" fill="#0d0d0f" stroke="#1f1f24"/>
+<text x="440" y="630" class="label" text-anchor="middle">Live status</text>
+<text x="440" y="660" font-size="20px" font-weight="700" fill="#2997ff" text-anchor="middle" font-family="'SF Mono',monospace">localhost:9999</text>
+<text x="440" y="685" class="detail" text-anchor="middle">scripts/live-status-server.py</text>
+<text x="440" y="705" class="detail" text-anchor="middle">10s auto-refresh</text>
+<text x="440" y="720" class="detail" text-anchor="middle">progress bar + per-cluster grid</text>
+<text x="440" y="735" class="detail-bold" text-anchor="middle">No public exposure</text>
+
+<rect x="580" y="605" width="240" height="160" rx="10" fill="#0d0d0f" stroke="#1f1f24"/>
+<text x="700" y="630" class="label" text-anchor="middle">Resumability</text>
+<text x="700" y="660" font-size="20px" font-weight="700" fill="#ff9f0a" text-anchor="middle" font-family="'SF Mono',monospace">progress.json</text>
+<text x="700" y="685" class="detail" text-anchor="middle">39-phase checkpoint state</text>
+<text x="700" y="705" class="detail" text-anchor="middle">Re-launch resumes from</text>
+<text x="700" y="720" class="detail" text-anchor="middle">last completed phase</text>
+<text x="700" y="735" class="detail-bold" text-anchor="middle">Survives laptop sleep</text>
+
+<rect x="840" y="605" width="300" height="160" rx="10" fill="#0d0d0f" stroke="#1f1f24"/>
+<text x="990" y="630" class="label" text-anchor="middle">Output artifacts</text>
+<text x="990" y="660" class="detail-bold" text-anchor="middle">e2e-results/v11-*/ — 30 raw logs</text>
+<text x="990" y="678" class="detail-bold" text-anchor="middle">dashboard/data/v11-only.json — stats</text>
+<text x="990" y="696" class="detail-bold" text-anchor="middle">docs/REPORTS/2026-05-17-v11-*.md</text>
+<text x="990" y="714" class="detail-bold" text-anchor="middle">infra/state/v11-master.log — full trace</text>
+<text x="990" y="735" class="detail" text-anchor="middle">All under git, reproducible</text>
+
+<defs>
+  <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+    <path d="M0,0 L0,6 L9,3 z" fill="#86868b"/>
+  </marker>
+</defs>
+</svg>

@@ -1,0 +1,94 @@
+# V12-AGGRESSIVE-TIMEOUTS — Hypothesis-driven timeout optimization.
+#
+# Building on v11's validated baseline, v12 tests 3 timeout reductions:
+#
+#   H1: connectTimeout 1000ms → 500ms
+#       Theory: After BG switchover, stale writer IP is unreachable. Each
+#       HikariCP connection attempt waits connectTimeout before giving up.
+#       Halving this should reduce BG recovery by ~0.5-1s per pool refill cycle.
+#       Risk: wrapper 4.0.1 failover2 plugin may handle this better than v6-era
+#       wrapper 3.x which broke at 500ms.
+#
+#   H2: failureDetectionTime 6000ms → 3000ms
+#       Theory: EFM2 waits failureDetectionTime before starting to probe the
+#       writer. Current 6s delay dominates FO median (8.2s ≈ 6s delay + 2s actual).
+#       Halving to 3s should bring FO median to ~5s.
+#       Risk: If Aurora writer has legitimate 3-6s stalls (GC, IO), this could
+#       trigger false-positive failover detection. Mitigated by keeping
+#       failureDetectionCount=3 (still needs 3 consecutive failures).
+#
+#   H3: socketTimeout 3000ms → 1500ms
+#       Theory: In-flight queries on stale connections wait socketTimeout before
+#       timing out. At 1500ms, stale connections are released faster, allowing
+#       HikariCP to refill sooner.
+#       Risk: Slow queries > 1.5s would be killed. Our workload is simple CRUD
+#       (single-row read/insert/update), max expected query time ~50ms.
+#
+# Unchanged from v11:
+#   - Same workload (1280 ops/s, pool=50, 10Hz STATS)
+#   - Same JVM flags (DNS TTL=5, negative TTL=2)
+#   - Same plugin chain (failover2, efm2, bg)
+#   - Same HikariCP pool config
+#   - Same infrastructure (CDK, 5-cluster parallel)
+#
+# Expected results vs v11:
+#   BG: 4.4s → ~3.5s (H1 effect)
+#   FO: 8.2s → ~5.0s (H2 effect, biggest expected win)
+#   RB: 6.6s → ~5.5s (H3 effect)
+#
+# Required JVM flags:
+#   -Dnetworkaddress.cache.ttl=5
+#   -Dnetworkaddress.cache.negative.ttl=2
+#   --add-opens java.base/java.lang=ALL-UNNAMED
+#   --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+#   -Xmx2g
+#
+name: v12-aggressive-timeouts
+description: v11 baseline + 3 timeout reductions (connectTimeout 500, failureDetectionTime 3000, socketTimeout 1500)
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+jdbc:
+  wrapperPlugins:
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 50
+  # H1: connectTimeout 1000 → 500ms
+  connectTimeout: 500
+  # H3: socketTimeout 3000 → 1500ms
+  socketTimeout: 1500
+  # H2: failureDetectionTime 6000 → 3000ms
+  failureDetectionTime: 3000
+  failureDetectionInterval: 1000
+  failureDetectionCount: 3
+  wrapperLoggerLevel: INFO
+
+hikari:
+  maximumPoolSize: 50
+  minimumIdle: 50
+  initializationFailTimeout: -1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 64
+  intervalMs: 50
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: true
+    delayMs: 25
+  statsReporterHz: 10

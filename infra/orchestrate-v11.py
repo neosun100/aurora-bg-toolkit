@@ -35,9 +35,18 @@ import boto3
 # ────────────────── config ──────────────────
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATE_DIR = REPO_ROOT / "infra" / "state"
-PROGRESS_FILE = STATE_DIR / "v11-progress.json"
-LOG_FILE = STATE_DIR / "v11-master.log"
-LOCK_FILE = STATE_DIR / "v11-master.lock"
+
+# Support running with different configs via environment variable:
+#   V11_CONFIG=v12-aggressive-timeouts python3 infra/orchestrate-v11.py
+# Default: v11-final (production baseline)
+ACTIVE_CONFIG = os.environ.get("V11_CONFIG", "v11-final")
+EXPERIMENT_NAME = f"v11-cdk-parallel" if ACTIVE_CONFIG == "v11-final" else f"v12-{ACTIVE_CONFIG.replace('v12-', '')}"
+
+# State files are per-config so v11 and v12 don't clobber each other
+_state_prefix = "v11" if ACTIVE_CONFIG == "v11-final" else "v12"
+PROGRESS_FILE = STATE_DIR / f"{_state_prefix}-progress.json"
+LOG_FILE = STATE_DIR / f"{_state_prefix}-master.log"
+LOCK_FILE = STATE_DIR / f"{_state_prefix}-master.lock"
 CDK_DIR = REPO_ROOT / "infra" / "cdk"
 
 CLUSTER_COUNT = 5
@@ -73,7 +82,7 @@ def load_progress() -> dict:
     if PROGRESS_FILE.exists() and os.environ.get("FRESH") != "1":
         return json.loads(PROGRESS_FILE.read_text())
     return {
-        "experiment": "v11-cdk-parallel",
+        "experiment": EXPERIMENT_NAME,
         "started_at": now(),
         "phases": {},
         "errors": [],
@@ -316,6 +325,62 @@ class V11Orchestrator:
         log.info("cdk deploy complete")
 
     # ───── Phase: COLLECT_OUTPUTS ─────
+    def _restore_runtime_state(self):
+        """Restore in-memory state from progress.json + boto3 when resuming.
+
+        When COLLECT_OUTPUTS was already done in a previous run, the in-memory
+        cluster_arns/endpoints/ec2_public_ip are empty. This method repopulates
+        them so TEST_PARALLEL can proceed.
+        """
+        if self.cluster_arns and self.ec2_public_ip:
+            return  # already populated (fresh run)
+        log.info("Restoring runtime state from progress.json + boto3...")
+        p = load_progress()
+        outs = p.get("outputs", {})
+        if outs.get("ec2_public_ip"):
+            self.ec2_public_ip = outs["ec2_public_ip"]
+            self.ec2_instance_id = outs.get("ec2_instance_id", "")
+            self.cluster_endpoints = outs.get("cluster_endpoints", {})
+            self.master_secret_arn = outs.get("master_secret_arn", "")
+        # cluster_arns not saved in outputs — fetch from RDS
+        if not self.cluster_arns:
+            for cid in CLUSTER_IDS:
+                try:
+                    r = self.rds.describe_db_clusters(DBClusterIdentifier=cid)
+                    self.cluster_arns[cid] = r["DBClusters"][0]["DBClusterArn"]
+                    if cid not in self.cluster_endpoints:
+                        self.cluster_endpoints[cid] = r["DBClusters"][0]["Endpoint"]
+                except Exception:
+                    pass
+        # master password from secret
+        if not self.master_password and self.master_secret_arn:
+            try:
+                sec = self.sm.get_secret_value(SecretId=self.master_secret_arn)
+                self.master_password = json.loads(sec["SecretString"])["password"]
+            except Exception:
+                pass
+        # key file
+        if not self.key_path.exists():
+            try:
+                # Fetch from SSM (stored by CDK KeyPair)
+                ec2 = boto3.client("ec2", region_name=AWS_REGION)
+                kps = ec2.describe_key_pairs(
+                    Filters=[{"Name": "key-name", "Values": ["abt-v11-key"]}],
+                    IncludePublicKey=False,
+                )["KeyPairs"]
+                if kps:
+                    kid = kps[0]["KeyPairId"]
+                    param = self.ssm.get_parameter(
+                        Name=f"/ec2/keypair/{kid}", WithDecryption=True
+                    )
+                    self.key_path.write_text(param["Parameter"]["Value"])
+                    os.chmod(self.key_path, 0o600)
+            except Exception:
+                pass
+        log.info("Restored: ec2=%s, clusters=%d, arns=%d, key=%s",
+                 self.ec2_public_ip, len(self.cluster_endpoints),
+                 len(self.cluster_arns), self.key_path.exists())
+
     def collect_outputs(self):
         # Network outputs
         net = self._stack_outputs(NETWORK_STACK)
@@ -385,7 +450,7 @@ class V11Orchestrator:
         scp_to(self.ec2_public_ip, self.key_path,
                REPO_ROOT / "target" / "abt-w401.jar",
                "/home/ec2-user/aurora-bg-toolkit/abt-w401.jar")
-        for cfg in ("v11-final.yaml", "v10-final.yaml", "v4-current.yaml"):
+        for cfg in (f"{ACTIVE_CONFIG}.yaml", "v11-final.yaml", "v10-final.yaml", "v4-current.yaml"):
             p = REPO_ROOT / "configs" / cfg
             if p.exists():
                 scp_to(self.ec2_public_ip, self.key_path,
@@ -544,14 +609,44 @@ class V11Orchestrator:
         v11 lesson: when a BG is in SWITCHOVER_COMPLETED, RDS still has work
         to do (creating -old1 cluster + instances) and rejects
         DeleteBlueGreenDeployment with InvalidBlueGreenDeploymentStateFault.
-        We retry every 30s for up to max_minutes, while also actively
-        cleaning -old* artifacts which accelerates the lifecycle progression.
 
-        Default max_minutes is 30 because empirical data shows RDS BG
-        lifecycle completion (SWITCHOVER_COMPLETED → deletable) can take
-        15-25 minutes when -old1 instances are r7g.large + reader t3.medium.
+        The key insight (learned after 3 failed runs): the lifecycle lock
+        persists until the -old1 cluster is FULLY AVAILABLE. Simply waiting
+        is not enough — we must ACTIVELY DELETE the -old1 instances and
+        cluster to unblock the lifecycle. Once -old1 artifacts are gone,
+        the BG becomes deletable within seconds.
+
+        Strategy:
+        1. Aggressively delete -old* instances + clusters every attempt
+        2. Wait for -old* to disappear (max 10 min)
+        3. Then delete the BG (should succeed immediately)
         """
         from botocore.exceptions import ClientError
+
+        log.info("[%s] _safe_delete_bg: cleaning -old* to unblock lifecycle...",
+                 cluster_id)
+
+        # Step 1: Aggressively clean -old* artifacts (the real blocker)
+        for attempt in range(20):  # 20 * 30s = 10 min
+            self._cleanup_old_instances_clusters()
+            time.sleep(30)
+            # Check if any -old* remain
+            try:
+                insts = self.rds.describe_db_instances()["DBInstances"]
+                old_insts = [i for i in insts if "-old" in i["DBInstanceIdentifier"]]
+                cls = self.rds.describe_db_clusters()["DBClusters"]
+                old_cls = [c for c in cls if "-old" in c["DBClusterIdentifier"]]
+                if not old_insts and not old_cls:
+                    log.info("[%s] all -old* gone after %d attempts",
+                             cluster_id, attempt + 1)
+                    break
+                if attempt % 4 == 0:
+                    log.info("[%s] -old* still present: %d insts, %d clusters (attempt %d)",
+                             cluster_id, len(old_insts), len(old_cls), attempt + 1)
+            except Exception:
+                pass
+
+        # Step 2: Now try to delete the BG (should work quickly)
         max_attempts = (max_minutes * 60) // 30
         for attempt in range(1, max_attempts + 1):
             try:
@@ -567,8 +662,7 @@ class V11Orchestrator:
                 if "InvalidBlueGreenDeploymentStateFault" not in code and \
                    "InvalidBlueGreenDeploymentStateFault" not in msg:
                     raise
-                # Help unstick lifecycle by cleaning -old* artifacts
-                if attempt % 3 == 1:
+                if attempt % 5 == 1:
                     self._cleanup_old_instances_clusters()
                 log.info("[%s] BG %s not deletable yet (attempt %d/%d): %s",
                          cluster_id, bg_id, attempt, max_attempts, msg)
@@ -633,7 +727,7 @@ DB_ENDPOINT="{endpoint}" DB_PORT=4488 DB_USER=admin DB_NAME=demo \
   nohup java -Dnetworkaddress.cache.ttl=5 -Dnetworkaddress.cache.negative.ttl=2 \
     --add-opens java.base/java.lang=ALL-UNNAMED \
     --add-opens java.base/java.lang.reflect=ALL-UNNAMED \
-    -Xmx2g -jar abt-w401.jar configs/v11-final.yaml \
+    -Xmx2g -jar abt-w401.jar configs/{ACTIVE_CONFIG}.yaml \
     > /home/ec2-user/{round_dir}/ec2_wrapper.log 2>&1 &
 echo $! > /home/ec2-user/{round_dir}/ec2_wrapper.pid
 """
@@ -660,20 +754,20 @@ echo $! > /home/ec2-user/{round_dir}/ec2_wrapper.pid
         local_round_dir = (REPO_ROOT / "e2e-results" /
                           f"v11-{scenario}-{cluster_id}-r{round_no}_"
                           f"{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}" /
-                          f"{cluster_id}_v11-final")
+                          f"{cluster_id}_{ACTIVE_CONFIG}")
         local_round_dir.mkdir(parents=True, exist_ok=True)
         scp_from(self.ec2_public_ip, self.key_path,
                  f"/home/ec2-user/{round_dir}/ec2_wrapper.log",
                  local_round_dir / "ec2_wrapper.log", timeout=180)
 
         meta = {
-            "runId": f"{cluster_id}_v11-final_{scenario_short}_r{round_no}",
-            "config": "v11-final",
+            "runId": f"{cluster_id}_{ACTIVE_CONFIG}_{scenario_short}_r{round_no}",
+            "config": ACTIVE_CONFIG,
             "scenario": scenario,
             "round": round_no,
             "cluster": cluster_id,
             "wrapperJar": "abt-w401.jar",
-            "experiment": "v11-cdk-parallel",
+            "experiment": EXPERIMENT_NAME,
         }
         (local_round_dir / "meta.json").write_text(json.dumps(meta))
 
@@ -783,6 +877,8 @@ echo $! > /home/ec2-user/{round_dir}/ec2_wrapper.pid
             self.run_phase("CDK_DEPLOY", self.cdk_deploy)
             self.run_phase("COLLECT_OUTPUTS", self.collect_outputs)
             self.run_phase("EC2_PROVISION", self.ec2_provision)
+            # Ensure in-memory state is populated even when resuming
+            self._restore_runtime_state()
             self.run_phase("TEST_PARALLEL", self.test_parallel)
             self.run_phase("ANALYZE", self.analyze)
             self.run_phase("REPORT", self.report)
