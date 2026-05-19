@@ -13,7 +13,7 @@
 > All code, data, and reports are open source: [github.com/neosun100/aurora-bg-toolkit](https://github.com/neosun100/aurora-bg-toolkit)
 
 <p align="center">
-  <img src="https://img.aws.xin/uPic/v10-vs-v9-results.png" alt="downtime comparison across versions" width="100%"/>
+  <img src="https://img.aws.xin/uPic/optimization-journey.png" alt="v9 → v12 optimization journey: 162 measurements across 4 versions, v11 emerged as production-optimal" width="100%"/>
 </p>
 
 ---
