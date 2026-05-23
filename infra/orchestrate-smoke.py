@@ -86,14 +86,25 @@ orchestrate_v11.SYNC_HOOK = _smoke_sync
 
 
 class SmokeOrchestrator(V11Orchestrator):
-    """Override test_parallel: only test-v11-1, BG only."""
+    """Override test_parallel: only test-v11-1, BG + RB.
+
+    v17 update: smoke now also runs reboot scenario so we can verify the
+    new server-side instrumentation (rds-server-state.json) and the
+    upgraded client config (FINER + 100Hz STATS) work end-to-end before
+    spending 24h+$170 on the full matrix.
+    """
 
     def test_parallel(self):
-        log.info("SMOKE TEST: only cluster test-v11-1, BG only, 1 round")
+        log.info("SMOKE TEST: only cluster test-v11-1, BG + RB (no FO)")
         try:
             self.run_round("test-v11-1", "blue-green", 1)
         except Exception as e:
             log.exception("smoke BG round failed: %s", e)
+            # Don't raise — RB is the critical v17 verification
+        try:
+            self.run_round("test-v11-1", "reboot", 1)
+        except Exception as e:
+            log.exception("smoke RB round failed: %s", e)
             raise
 
     def run_cluster_all_rounds(self, cluster_id: str):
@@ -102,14 +113,15 @@ class SmokeOrchestrator(V11Orchestrator):
             log.info("SMOKE: skipping %s", cluster_id)
             return
         self.run_round(cluster_id, "blue-green", 1)
+        self.run_round(cluster_id, "reboot", 1)
 
 
 def main():
     log.info("=" * 78)
     log.info(" Aurora BG Toolkit Smoke Test (Layer 2)")
-    log.info(" Mode: 1 cluster × 1 round × BG only")
+    log.info(" Mode: 1 cluster × 1 round × BG + RB (v17: validates instrumentation)")
     log.info(" State prefix: %s", os.environ["V11_STATE_PREFIX"])
-    log.info(" Expected duration: ~30 min, ~$1 AWS")
+    log.info(" Expected duration: ~50 min, ~$2 AWS")
     log.info("=" * 78)
 
     o = SmokeOrchestrator()
