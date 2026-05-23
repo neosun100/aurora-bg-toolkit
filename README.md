@@ -18,10 +18,28 @@
 [v16 Matrix Sweep](#-v16-matrix-sweep-2026-05-21) ·
 [Lifecycle](#-test-lifecycle--single-run-2h) ·
 [Optimization Journey](#-optimization-journey) ·
+[**📑 Final Report**](docs/FINAL-REPORT.md) ·
 [Reports](docs/REPORTS) ·
 [Dashboard](dashboard/index.html)
 
 </div>
+
+---
+
+## 📑 Final Report (start here)
+
+**For HashKey production readiness, the single source of truth is [`docs/FINAL-REPORT.md`](docs/FINAL-REPORT.md)** — 547 lines integrating all v9 → v16 findings into one document:
+
+- **TL;DR** — production decision in 5 lines
+- **Core matrix** — instance × TPS × scenario with full percentiles (P50 / P75 / P90 / P95 / P99 / max)
+- **Production parameters** — direct copy-paste config (JDBC + HikariCP + JVM + workload + topology)
+- **Application-layer timeouts** — request timeout ≥ 25s · circuit breaker ≥ 17s · reboot < 1s
+- **"Do NOT touch" list** — what's already been falsified (v9 + v12 reverse experiments)
+- **Known risks** — including the 8X+4000 TPS BG concurrency limit
+- **Raw data CSVs** — [`v16-matrix-percentiles.csv`](dashboard/data/v16-matrix-percentiles.csv) (19 rows aggregate) + [`v16-raw-measurements.csv`](dashboard/data/v16-raw-measurements.csv) (89 rows raw)
+
+> If you need data alone, the two CSVs above are self-contained and BI-friendly.
+> If you need narrative, the Final Report is the integrated answer.
 
 ---
 

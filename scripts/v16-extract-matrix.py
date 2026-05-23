@@ -49,9 +49,13 @@ def stats(xs: list[int]) -> dict:
         "max": int(s[-1]),
         "mean": int(st.mean(s)),
         "median": int(st.median(s)),
+        "p50": percentile(s, 50),
+        "p75": percentile(s, 75),
+        "p90": percentile(s, 90),
+        "p95": percentile(s, 95),
+        "p99": percentile(s, 99),
         "q1": percentile(s, 25),
         "q3": percentile(s, 75),
-        "p95": percentile(s, 95),
         "stdev": int(st.pstdev(s)) if len(s) > 1 else 0,
     }
 
@@ -213,6 +217,91 @@ def main():
         print(f"  {run_label:30s}  BG={meds[0]:>6}ms (n={ns[0]})  "
               f"FO={meds[1]:>6}ms (n={ns[1]})  "
               f"RB={meds[2]:>6}ms (n={ns[2]})", file=sys.stderr)
+
+    # ── CSV exports ──
+    # CSV 1: aggregate percentiles (1 row per run × scenario, 18 rows total)
+    import csv
+    PCSV = REPO_ROOT / "dashboard/data/v16-matrix-percentiles.csv"
+    PCSV.parent.mkdir(parents=True, exist_ok=True)
+    with PCSV.open("w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow([
+            "run_id", "run_label", "scenario",
+            "writer_instance", "reader_instance", "client_instance",
+            "tps", "tps_config",
+            "n", "min_ms",
+            "p50_ms", "p75_ms", "p90_ms", "p95_ms", "p99_ms", "max_ms",
+            "mean_ms", "stdev_ms",
+        ])
+        # Order: M1, M2, M3, M4, T2, T3 then within each: BG, FO, RB
+        ORDER = [
+            ("M1", "v16-M1-r7glarge-tps1280"),
+            ("M2", "v16-M2-r7g2xl-tps1280"),
+            ("M3", "v16-M3-r7g4xl-tps1280"),
+            ("M4", "v16-M4-r7g8xl-tps1280"),
+            ("T2", "v16-T2-r7g8xl-tps2560"),
+            ("T3", "v16-T3-r7g8xl-tps4000"),
+        ]
+        for run_id, run_label in ORDER:
+            rs = runs_summary.get(run_label)
+            if not rs:
+                continue
+            meta = rs["metadata"]
+            for sc_key in ("blue-green", "failover", "reboot"):
+                ws = rs["scenarios"][sc_key]["writeStats"]
+                w.writerow([
+                    run_id, run_label, sc_key,
+                    meta.get("writer_instance", ""),
+                    meta.get("reader_instance", ""),
+                    meta.get("client_instance", ""),
+                    meta.get("tps", ""),
+                    meta.get("tps_config", ""),
+                    ws.get("n", 0),
+                    ws.get("min", 0),
+                    ws.get("p50", 0),
+                    ws.get("p75", 0),
+                    ws.get("p90", 0),
+                    ws.get("p95", 0),
+                    ws.get("p99", 0),
+                    ws.get("max", 0),
+                    ws.get("mean", 0),
+                    ws.get("stdev", 0),
+                ])
+    print(f"  Wrote CSV: {PCSV}", file=sys.stderr)
+
+    # CSV 2: raw measurements (1 row per cluster × scenario, 88 rows)
+    RCSV = REPO_ROOT / "dashboard/data/v16-raw-measurements.csv"
+    with RCSV.open("w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow([
+            "run_id", "run_label", "scenario",
+            "cluster", "round",
+            "writer_instance", "reader_instance", "client_instance",
+            "tps", "tps_config",
+            "writeMaxMs", "readMaxMs",
+            "result_dir",
+        ])
+        for run_id, run_label in ORDER:
+            rs = runs_summary.get(run_label)
+            if not rs:
+                continue
+            meta = rs["metadata"]
+            for sc_key in ("blue-green", "failover", "reboot"):
+                for r in rs["scenarios"][sc_key]["rounds"]:
+                    w.writerow([
+                        run_id, run_label, sc_key,
+                        r.get("cluster", ""),
+                        r.get("round", ""),
+                        meta.get("writer_instance", ""),
+                        meta.get("reader_instance", ""),
+                        meta.get("client_instance", ""),
+                        meta.get("tps", ""),
+                        meta.get("tps_config", ""),
+                        r.get("writeMaxMs", 0),
+                        r.get("readMaxMs", 0),
+                        r.get("directory", ""),
+                    ])
+    print(f"  Wrote CSV: {RCSV}", file=sys.stderr)
     return 0
 
 
