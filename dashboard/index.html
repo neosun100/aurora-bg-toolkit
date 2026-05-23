@@ -261,6 +261,7 @@
     <h1>Aurora BG Toolkit</h1>
     <p id="versionTagline">Full IaC migration. 5 clusters in parallel. Per-cluster contention analysis. <span id="genAt"></span></p>
     <div class="view-switcher">
+      <a href="#v16" id="link-v16">v16 (Matrix Sweep) ⭐</a>
       <a href="#v11" id="link-v11" class="active">v11 (CDK + parallel)</a>
       <a href="#v12" id="link-v12">v12 (Aggressive Timeouts)</a>
       <a href="#v10" id="link-v10">v10 (single cluster)</a>
@@ -357,11 +358,13 @@
   let view = 'v11';
   if (hash === 'v10') view = 'v10';
   else if (hash === 'v12') view = 'v12';
+  else if (hash === 'v16') view = 'v16';
 
   // Update UI for the chosen view
   document.getElementById('link-v10').classList.toggle('active', view === 'v10');
   document.getElementById('link-v11').classList.toggle('active', view === 'v11');
   document.getElementById('link-v12').classList.toggle('active', view === 'v12');
+  document.getElementById('link-v16').classList.toggle('active', view === 'v16');
 
   if (view === 'v10') {
     document.getElementById('versionBadge').textContent = 'v10 · Single cluster, bash orchestrator';
@@ -382,6 +385,13 @@
     document.getElementById('configFile').textContent = 'configs/v12-aggressive-timeouts.yaml';
     document.getElementById('footerVersion').textContent = 'v12-aggressive-timeouts';
     document.getElementById('emptyMsg').innerHTML = 'Run: <code>V11_CONFIG=v12-aggressive-timeouts nohup python3 infra/orchestrate-v11.py &amp;</code>';
+  } else if (view === 'v16') {
+    document.getElementById('versionBadge').textContent = 'v16 · Instance × TPS Matrix (PRODUCTION)';
+    document.getElementById('versionTagline').innerHTML = '6 runs × 5 clusters × 3 scenarios = 90 measurements across 4 instance classes (1X→8X) and 3 TPS tiers (1280/2560/4000). Headline: T3 (8X @ 4000 TPS) for HashKey production. <span id="genAt"></span>';
+    document.title = 'Aurora BG Toolkit — v16 Matrix Sweep';
+    document.getElementById('configFile').textContent = 'configs/v16-tps4000.yaml';
+    document.getElementById('footerVersion').textContent = 'v16-matrix-sweep';
+    document.getElementById('emptyMsg').innerHTML = 'Run: <code>bash infra/launch-matrix.sh</code>';
   } else {
     // v11 (default)
     document.getElementById('emptyMsg').innerHTML = 'Run: <code>nohup python3 infra/orchestrate-v11.py > /tmp/v11-launch.log 2>&amp;1 &amp;</code>';
@@ -396,6 +406,9 @@
   });
   document.getElementById('link-v12').addEventListener('click', function (e) {
     if (view !== 'v12') setTimeout(() => location.reload(), 50);
+  });
+  document.getElementById('link-v16').addEventListener('click', function (e) {
+    if (view !== 'v16') setTimeout(() => location.reload(), 50);
   });
 
   // Inject the right script

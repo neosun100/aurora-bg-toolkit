@@ -1,0 +1,410 @@
+{
+  "schema": "v16-matrix-1",
+  "experiment": "v16-instance-tps-sweep",
+  "generatedAt": "2026-05-23T10:42:33Z",
+  "config": {
+    "name": "v16-tps4000",
+    "yamlPath": "configs/v16-tps4000.yaml",
+    "highlights": [
+      {
+        "name": "Infrastructure",
+        "value": "AWS CDK + Matrix runner",
+        "rationale": "v16: 7 runs autonomous via systemd"
+      },
+      {
+        "name": "Test matrix",
+        "value": "4 instance \u00d7 3 TPS",
+        "rationale": "Instance: 1X/2X/4X/8X \u00b7 TPS: 1280/2560/4000"
+      },
+      {
+        "name": "Headline run (T3)",
+        "value": "r7g.8xlarge @ 4000 TPS",
+        "rationale": "HashKey production target, Steven-grade"
+      },
+      {
+        "name": "Cluster topology",
+        "value": "writer + reader replica",
+        "rationale": "Matches HSK production; reader auto-promotes on reboot"
+      },
+      {
+        "name": "Workload",
+        "value": "4000 ops/s \u00d7 5 cluster",
+        "rationale": "20,000 aggregate ops/s on c6i.8xlarge"
+      },
+      {
+        "name": "Pool size",
+        "value": "120 (T3) / 80 (T2) / 50 (M*)",
+        "rationale": "Scales with TPS"
+      },
+      {
+        "name": "JVM heap",
+        "value": "-Xmx4g (T3) / -Xmx3g (T2) / -Xmx2g (M*)",
+        "rationale": "Sized for TPS"
+      },
+      {
+        "name": "Buffer warmup",
+        "value": "5 min @ 8X",
+        "rationale": "Lets buffer pool reach steady state before reboot"
+      },
+      {
+        "name": "Reboot stabilize",
+        "value": "5 min @ 8X",
+        "rationale": "Captures buffer pool reload cost on cold path"
+      },
+      {
+        "name": "wrapper",
+        "value": "4.0.1",
+        "rationale": "v11 baseline"
+      },
+      {
+        "name": "RB measurement note",
+        "value": "RB \u2248 0ms expected",
+        "rationale": "v16 cluster topology: reboot writer \u2192 cluster auto-failover \u2192 AWS JDBC wrapper transparently follows"
+      }
+    ]
+  },
+  "scenarios": {
+    "blue-green": {
+      "writeStats": {
+        "n": 3,
+        "min": 3200,
+        "max": 3400,
+        "mean": 3333,
+        "median": 3400,
+        "q1": 3300,
+        "q3": 3400,
+        "p95": 3400,
+        "stdev": 94
+      },
+      "readStats": {
+        "n": 3,
+        "min": 3200,
+        "max": 3400,
+        "mean": 3300,
+        "median": 3300,
+        "q1": 3250,
+        "q3": 3350,
+        "p95": 3390,
+        "stdev": 81
+      },
+      "samples": [
+        3400,
+        3400,
+        3200
+      ]
+    },
+    "failover": {
+      "writeStats": {
+        "n": 5,
+        "min": 7900,
+        "max": 16700,
+        "mean": 11320,
+        "median": 11001,
+        "q1": 8400,
+        "q3": 12600,
+        "p95": 15880,
+        "stdev": 3190
+      },
+      "readStats": {
+        "n": 5,
+        "min": 7900,
+        "max": 16700,
+        "mean": 11320,
+        "median": 11001,
+        "q1": 8400,
+        "q3": 12600,
+        "p95": 15880,
+        "stdev": 3190
+      },
+      "samples": [
+        7900,
+        8400,
+        12600,
+        16700,
+        11001
+      ]
+    },
+    "reboot": {
+      "writeStats": {
+        "n": 5,
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "median": 0,
+        "q1": 0,
+        "q3": 0,
+        "p95": 0,
+        "stdev": 0
+      },
+      "readStats": {
+        "n": 5,
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "median": 0,
+        "q1": 0,
+        "q3": 0,
+        "p95": 0,
+        "stdev": 0
+      },
+      "samples": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "matrix_summary": {
+    "instance_sweep_at_1280": {
+      "r7g.large": {
+        "BG": {
+          "n": 5,
+          "min": 3800,
+          "max": 6200,
+          "mean": 4761,
+          "median": 4600,
+          "q1": 4201,
+          "q3": 5005,
+          "p95": 5961,
+          "stdev": 823
+        },
+        "FO": {
+          "n": 5,
+          "min": 6200,
+          "max": 17000,
+          "mean": 9620,
+          "median": 9300,
+          "q1": 6300,
+          "q3": 9300,
+          "p95": 15459,
+          "stdev": 3934
+        },
+        "RB": {
+          "n": 5,
+          "min": 0,
+          "max": 100,
+          "mean": 40,
+          "median": 0,
+          "q1": 0,
+          "q3": 100,
+          "p95": 100,
+          "stdev": 48
+        }
+      },
+      "r7g.2xlarge": {
+        "BG": {
+          "n": 5,
+          "min": 3201,
+          "max": 4600,
+          "mean": 3800,
+          "median": 3401,
+          "q1": 3300,
+          "q3": 4500,
+          "p95": 4580,
+          "stdev": 616
+        },
+        "FO": {
+          "n": 5,
+          "min": 8400,
+          "max": 17000,
+          "mean": 11040,
+          "median": 10100,
+          "q1": 8400,
+          "q3": 11300,
+          "p95": 15860,
+          "stdev": 3175
+        },
+        "RB": {
+          "n": 5,
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "median": 0,
+          "q1": 0,
+          "q3": 0,
+          "p95": 0,
+          "stdev": 0
+        }
+      },
+      "r7g.4xlarge": {
+        "BG": {
+          "n": 5,
+          "min": 3300,
+          "max": 15300,
+          "mean": 6020,
+          "median": 3900,
+          "q1": 3300,
+          "q3": 4301,
+          "p95": 13100,
+          "stdev": 4655
+        },
+        "FO": {
+          "n": 5,
+          "min": 8300,
+          "max": 11200,
+          "mean": 9960,
+          "median": 10900,
+          "q1": 8300,
+          "q3": 11100,
+          "p95": 11180,
+          "stdev": 1358
+        },
+        "RB": {
+          "n": 5,
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "median": 0,
+          "q1": 0,
+          "q3": 0,
+          "p95": 0,
+          "stdev": 0
+        }
+      },
+      "r7g.8xlarge": {
+        "BG": {
+          "n": 5,
+          "min": 3000,
+          "max": 4300,
+          "mean": 3560,
+          "median": 3200,
+          "q1": 3100,
+          "q3": 4200,
+          "p95": 4280,
+          "stdev": 567
+        },
+        "FO": {
+          "n": 5,
+          "min": 7600,
+          "max": 10400,
+          "mean": 8540,
+          "median": 8100,
+          "q1": 7700,
+          "q3": 8900,
+          "p95": 10100,
+          "stdev": 1036
+        },
+        "RB": {
+          "n": 5,
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "median": 0,
+          "q1": 0,
+          "q3": 0,
+          "p95": 0,
+          "stdev": 0
+        }
+      }
+    },
+    "tps_sweep_at_8X": {
+      "1280": {
+        "BG": {
+          "n": 5,
+          "min": 3000,
+          "max": 4300,
+          "mean": 3560,
+          "median": 3200,
+          "q1": 3100,
+          "q3": 4200,
+          "p95": 4280,
+          "stdev": 567
+        },
+        "FO": {
+          "n": 5,
+          "min": 7600,
+          "max": 10400,
+          "mean": 8540,
+          "median": 8100,
+          "q1": 7700,
+          "q3": 8900,
+          "p95": 10100,
+          "stdev": 1036
+        },
+        "RB": {
+          "n": 5,
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "median": 0,
+          "q1": 0,
+          "q3": 0,
+          "p95": 0,
+          "stdev": 0
+        }
+      },
+      "2560": {
+        "BG": {
+          "n": 5,
+          "min": 3416,
+          "max": 4600,
+          "mean": 3983,
+          "median": 4200,
+          "q1": 3500,
+          "q3": 4202,
+          "p95": 4520,
+          "stdev": 453
+        },
+        "FO": {
+          "n": 5,
+          "min": 8100,
+          "max": 12600,
+          "mean": 9540,
+          "median": 9000,
+          "q1": 8200,
+          "q3": 9800,
+          "p95": 12040,
+          "stdev": 1648
+        },
+        "RB": {
+          "n": 5,
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "median": 0,
+          "q1": 0,
+          "q3": 0,
+          "p95": 0,
+          "stdev": 0
+        }
+      },
+      "4000": {
+        "BG": {
+          "n": 3,
+          "min": 3200,
+          "max": 3400,
+          "mean": 3333,
+          "median": 3400,
+          "q1": 3300,
+          "q3": 3400,
+          "p95": 3400,
+          "stdev": 94
+        },
+        "FO": {
+          "n": 5,
+          "min": 7900,
+          "max": 16700,
+          "mean": 11320,
+          "median": 11001,
+          "q1": 8400,
+          "q3": 12600,
+          "p95": 15880,
+          "stdev": 3190
+        },
+        "RB": {
+          "n": 5,
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "median": 0,
+          "q1": 0,
+          "q3": 0,
+          "p95": 0,
+          "stdev": 0
+        }
+      }
+    }
+  }
+}

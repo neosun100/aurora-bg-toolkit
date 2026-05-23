@@ -11,10 +11,11 @@
 [![Aurora MySQL](https://img.shields.io/badge/Aurora%20MySQL-3.10.4-2997ff.svg?logo=amazonaws&logoColor=white)](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraMySQLReleaseNotes/)
 [![JDBC Wrapper](https://img.shields.io/badge/aws--advanced--jdbc--wrapper-4.0.1-30d158.svg)](https://github.com/awslabs/aws-advanced-jdbc-wrapper)
 [![HikariCP](https://img.shields.io/badge/HikariCP-4.0.3-bf5af2.svg)](https://github.com/brettwooldridge/HikariCP)
-[![Tests](https://img.shields.io/badge/measurements-162-brightgreen.svg)](#optimization-journey)
+[![Tests](https://img.shields.io/badge/measurements-250+-brightgreen.svg)](#optimization-journey)
 
 [Quick Start](#-quick-start) ·
 [Optimal Config](#-optimal-config-v11) ·
+[v16 Matrix Sweep](#-v16-matrix-sweep-2026-05-21) ·
 [Lifecycle](#-test-lifecycle--single-run-2h) ·
 [Optimization Journey](#-optimization-journey) ·
 [Reports](docs/REPORTS) ·
@@ -49,7 +50,7 @@ This toolkit lets you **reproduce, measure, and optimize** these scenarios end-t
 - 📊 **High-precision measurement** — 10 Hz STATS reporter = ±100ms accuracy under realistic production load (1280 ops/s, pool=50)
 - 🔄 **Fully resumable** — laptop sleep, network drop, AWS API throttle? Re-run picks up at last checkpoint
 - 📉 **Self-contained dashboard** — single HTML, Apple-style dark theme, SVG box plots, share via email
-- 🔬 **162 measurements across 4 versions** — v9 → v10 → v11 → v12 — with v11 emerging as **production-optimal**
+- 🔬 **250+ measurements across 7 versions** — v9 → v10 → v11 → v12 — with v11 emerging as **production-optimal**
 - 🛡 **No public exposure** — live status server is `localhost`-only; no Lambda, no public endpoints
 
 Originally built to diagnose a 4–57s downtime issue at a digital-asset exchange customer; now generalized as a reusable benchmark with rigorous statistical methodology.
@@ -58,10 +59,10 @@ Originally built to diagnose a 4–57s downtime issue at a digital-asset exchang
 
 ## 🏆 Optimal Config (v11)
 
-> **After 162 measurements across 4 versions over 5 months, the production-optimal configuration is `configs/v11-final.yaml`. v12 attempted further timeout reductions; all 3 hypotheses regressed. v11 is at a local optimum — DO NOT modify these timeouts.**
+> **After 250+ measurements across 7 versions over 7 days (2026-05-16 → 2026-05-22), the production-optimal configuration is `configs/v11-final.yaml`. v12 attempted further timeout reductions; all 3 hypotheses regressed. v11 is at a local optimum — DO NOT modify these timeouts.**
 
 <p align="center">
-  <img src="https://img.aws.xin/uPic/optimization-journey.png" alt="v9 → v12 optimization journey, 162 measurements, v11 emerged as production-optimal" width="100%"/>
+  <img src="https://img.aws.xin/uPic/optimization-journey.png" alt="v9 → v16 optimization journey, 250+ measurements, v11 emerged as production-optimal" width="100%"/>
 </p>
 
 ### Final benchmark — v11 (recommended)
@@ -210,7 +211,7 @@ Phase ① + ③ + ⑦ + ⑧                                      <2%
 
 ## 📚 Optimization Journey
 
-This toolkit's parameters didn't appear by guessing. They emerged from **162 measurements across 4 versions over 5 months**, with each version testing specific hypotheses:
+This toolkit's parameters didn't appear by guessing. They emerged from **250+ measurements across 7 versions over 7 days (2026-05-16 → 2026-05-22)**, with each version testing specific hypotheses:
 
 ### v9 — multi-lever exploration (120 measurements)
 Tested 5 hypotheses in one config under low load (40 ops/s):
@@ -241,6 +242,47 @@ Tested 3 timeout reductions vs v11:
 **Lesson**: aggressive timeouts trigger retry storms that race with Aurora's own recovery, producing longer + higher-variance downtime. The intuition "shorter timeout = faster recovery" is wrong when the timeout's purpose is to upper-bound *legitimate RDS control plane operations*, not stuck waits.
 
 **v11 is at a local optimum.** Future work should focus on RDS service-side improvements, not client-side timeout tuning.
+
+### v13 / v14 / v15 — JVM + OS exploration (incomplete, no formal report)
+
+Three exploratory paths after v12: ZGC garbage collector, AlwaysPreTouch + JVM tuning, Linux TCP keepalive. None produced a statistically significant improvement over v11. v13 and v15 ran but did not generate formal reports; v14 was a config-only design exercise. **All three are documented in [`docs/EVOLUTION-v9-to-v16.md`](docs/EVOLUTION-v9-to-v16.md) for completeness.**
+
+### v16 — instance × TPS matrix sweep (88 measurements, ~27h autonomous) ⭐ STEVEN-GRADE
+
+The "Steven-grade" production validation. 6 runs × 5 clusters × 1 round × 3 scenarios = **88 measurements** across 4 instance classes (1X / 2X / 4X / 8X) and 3 TPS tiers (1280 / 2560 / **4000**) on `r7g.8xlarge` writers.
+
+| Run | Writer | TPS | BG median | FO median | RB median |
+|---|---|---|---|---|---|
+| M1 — 1X @ 1280 | r7g.large    | 1280 | 4.60 s | 9.30 s | 0 ms |
+| M2 — 2X @ 1280 | r7g.2xlarge  | 1280 | 3.40 s | 10.10 s | 0 ms |
+| M3 — 4X @ 1280 | r7g.4xlarge  | 1280 | 3.90 s | 10.90 s | 0 ms |
+| M4 — 8X @ 1280 | r7g.8xlarge  | 1280 | 3.20 s | 8.10 s | 0 ms |
+| T2 — 8X @ 2560 | r7g.8xlarge  | 2560 | 4.20 s | 9.00 s | 0 ms |
+| **T3 — 8X @ 4000** ⭐ | r7g.8xlarge  | 4000 | 3.40 s | 11.00 s | 0 ms |
+
+**Three v16 findings that update production guidance:**
+
+1. **v11 config holds across all instance classes.** BG/FO medians stay
+   stable (3.2-4.6 s / 8.1-11.0 s) regardless of writer size. No
+   instance-specific tuning needed.
+
+2. **RB ≈ 0 ms in cluster topology.** v16 used the production cluster
+   topology (writer + reader replica) and AWS JDBC wrapper. Reboot writer
+   triggers cluster auto-failover (~1 s), the wrapper transparently follows.
+   Different from v11's "single-instance reboot 7 s" finding, because v11
+   tested a topology without reader replicas. **For HSK production, reboot
+   is effectively transparent.**
+
+3. **BG creation is NOT 100% reliable at 8X + 4000 TPS.** T3 cluster-3
+   and cluster-5 BG creation **failed** with `InvalidBlueGreenDeploymentStateFault`
+   under 5-cluster simultaneous + 4000 ops/s sustained load. **Production
+   guidance: schedule BG switchovers at off-peak, one cluster at a time,
+   when on 8X infrastructure at production TPS.**
+
+Wall time: **27 hours autonomous** on AWS (t3.small runner via systemd).
+AWS cost: **~$170**. Operator time: **0** (Bark notifications to phone).
+
+See [`docs/REPORTS/2026-05-21-v16-instance-tps-sweep.md`](docs/REPORTS/2026-05-21-v16-instance-tps-sweep.md) and [`docs/EVOLUTION-v9-to-v16.md`](docs/EVOLUTION-v9-to-v16.md) for full data + per-cluster breakdown.
 
 ---
 
@@ -276,9 +318,13 @@ Both kept (v9 H2 proved removing them gives no benefit). Belt-and-braces against
 
 | Asset | Location |
 |---|---|
+| 📄 **v16 matrix sweep final report (Steven-grade)** ⭐ | [`docs/REPORTS/2026-05-21-v16-instance-tps-sweep.md`](docs/REPORTS/2026-05-21-v16-instance-tps-sweep.md) |
 | 📄 **v11 final report (recommended config)** | [`docs/REPORTS/2026-05-17-v11-cdk-parallel.md`](docs/REPORTS/2026-05-17-v11-cdk-parallel.md) |
 | 📄 **v12 rejection report (with regression analysis)** | [`docs/REPORTS/2026-05-19-v12-aggressive-timeouts.md`](docs/REPORTS/2026-05-19-v12-aggressive-timeouts.md) |
 | 📄 **v10 production-load reference** | [`docs/REPORTS/2026-05-17-v10-production.md`](docs/REPORTS/2026-05-17-v10-production.md) |
+| 📈 **Full evolution narrative (v9 → v16)** | [`docs/EVOLUTION-v9-to-v16.md`](docs/EVOLUTION-v9-to-v16.md) |
+| 📊 **v16 dashboard data (matrix)** | [`dashboard/data/v16-matrix.json`](dashboard/data/v16-matrix.json) |
+| 📊 **v16 dashboard data (T3 headline)** | [`dashboard/data/v16-only.json`](dashboard/data/v16-only.json) |
 | 📊 **v11 dashboard data** | [`dashboard/data/v11-only.json`](dashboard/data/v11-only.json) |
 | 📊 **v12 dashboard data** | [`dashboard/data/v12-only.json`](dashboard/data/v12-only.json) |
 | 🔬 **v11 pre-registered design** | [`docs/EXPERIMENT-V11-PLAN.md`](docs/EXPERIMENT-V11-PLAN.md) |
@@ -358,5 +404,5 @@ If you still see >25s downtime after applying v11, file an issue with `e2e-resul
 ---
 
 <div align="center">
-  <sub><b>Aurora BG Toolkit</b> · 162 measurements · v11 production-optimal · ~2h per run · ~$5 per run · <a href="https://github.com/neosun100/aurora-bg-toolkit">github.com/neosun100/aurora-bg-toolkit</a></sub>
+  <sub><b>Aurora BG Toolkit</b> · 250+ measurements · v11 production-optimal · v16 matrix-validated · ~2h per run · ~$5 per run · <a href="https://github.com/neosun100/aurora-bg-toolkit">github.com/neosun100/aurora-bg-toolkit</a></sub>
 </div>

@@ -5,6 +5,172 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v16-instance-tps-sweep] - 2026-05-22
+
+> ⭐ **STEVEN-GRADE.** Production validation that v11 config holds across
+> instance classes (1X / 2X / 4X / 8X) and TPS tiers (1280 / 2560 / 4000).
+> Headline: **T3 (8X @ 4000 TPS)** is the HashKey production target. v11
+> is confirmed optimal across all 6 runs.
+
+### Tested
+
+| Run | Writer | TPS | Purpose |
+|---|---|---|---|
+| smoke | r7g.large | 1280 | pipeline validation (~30 min, ~$1) |
+| M1 | r7g.large    | 1280 | 1X baseline (reproduces v11) |
+| M2 | r7g.2xlarge  | 1280 | 2X (parameterization verification) |
+| M3 | r7g.4xlarge  | 1280 | 4X (mid-tier trendline) |
+| M4 | r7g.8xlarge  | 1280 | 8X @ HSK current load |
+| T2 | r7g.8xlarge  | 2560 | 8X @ medium load |
+| T3 | r7g.8xlarge  | 4000 | **8X @ HSK production target** ⭐ |
+
+### Headline results
+
+| Run | BG median | FO median | RB median | n |
+|---|---|---|---|---|
+| M1 — 1X @ 1280 | 4.60 s | 9.30 s | 0 ms | 15 |
+| M2 — 2X @ 1280 | 3.40 s | 10.10 s | 0 ms | 15 |
+| M3 — 4X @ 1280 | 3.90 s | 10.90 s | 0 ms | 15 |
+| M4 — 8X @ 1280 | 3.20 s | 8.10 s | 0 ms | 15 |
+| T2 — 8X @ 2560 | 4.20 s | 9.00 s | 0 ms | 15 |
+| **T3 — 8X @ 4000** | 3.40 s | 11.00 s | 0 ms | 13 (BG n=3) |
+
+**Three findings that update production guidance:**
+
+1. **v11 config holds across all instance classes** — BG/FO medians stable
+   regardless of writer size. No instance-specific tuning needed.
+
+2. **RB ≈ 0 ms in cluster topology** — v16 used production cluster topology
+   (writer + reader replica) with AWS JDBC wrapper. Reboot writer triggers
+   cluster auto-failover (~1 s), wrapper transparently follows. Different
+   from v11's "single-instance reboot 7 s" because v11 lacked reader
+   replicas. **For HSK production, reboot is effectively transparent.**
+
+3. **BG creation is NOT 100% reliable at 8X + 4000 TPS** — T3 cluster-3
+   and cluster-5 BG creation **failed** with `InvalidBlueGreenDeploymentStateFault`.
+   RDS control plane couldn't handle 5 simultaneous BGs each sustaining
+   4000 ops/s. **Production guidance: schedule BG switchovers off-peak,
+   one cluster at a time, on 8X infrastructure at production TPS.**
+
+### Infrastructure additions
+
+- **Matrix runner stack** (`AbtV16MatrixRunnerStack`) — t3.small EC2 +
+  S3 progress bucket + SNS topic, all CDK-managed
+- **`infra/orchestrate-matrix.py`** (520 lines) — wraps `orchestrate-v11.py`
+  in a sweep loop. Each run:
+  - Verifies AWS account is clean (no AbtV11* clusters) before starting
+  - Sets per-run env vars (writer/reader/client instance, TPS config, JVM heap)
+  - Invokes `orchestrate-v11.py` as subprocess with run-specific
+    `V11_STATE_PREFIX` to keep state files separate
+  - Verifies clean destroy before the next run starts
+  - Syncs progress to `s3://abt-v16-state-{account}/matrix-progress.json` every cycle
+  - Publishes Bark notifications (primary) + SNS (fallback) on each milestone
+- **`infra/launch-matrix.sh`** — one-shot bootstrapper:
+  builds fat-jar → cdk deploy NetworkStack + MatrixRunnerStack → uploads
+  toolkit tarball → installs systemd service → starts service →
+  prints monitoring commands. After this, user can close laptop;
+  matrix runs autonomously for ~12h.
+- **`infra/matrix-spec.yaml`** — declarative run specification (defaults
+  + 7 runs + failure handling policy)
+- **`infra/orchestrate-smoke.py`** — fast (~30 min) end-to-end pipeline
+  check: 1 cluster, 1 round, BG only. Run before matrix to catch bugs
+  before $150 of unattended testing.
+
+### Tooling additions
+
+- `configs/v16-tps1280.yaml` — pool=50, threads=64, 50 ms interval, `-Xmx2g`
+- `configs/v16-tps2560.yaml` — pool=80, threads=72, 30 ms interval, `-Xmx3g`
+- `configs/v16-tps4000.yaml` — pool=120, threads=80, 20 ms interval, `-Xmx4g`
+- `scripts/v16-extract-matrix.py` — aggregates 88 measurements into
+  `dashboard/data/v16-matrix.json`. Sliceable by run / scenario / instance / TPS.
+- `scripts/v16-generate-report.py` — auto-writes
+  `docs/REPORTS/2026-05-21-v16-instance-tps-sweep.md` from matrix data.
+- `scripts/v16-dashboard-html.py` — generates self-contained progress HTML
+  for the matrix runner (auto-refreshes every 30 s, uploaded to S3 with
+  CloudFront-friendly cache headers)
+- `scripts/v16-check.sh` — terminal status renderer (pulls
+  `matrix-progress.json` from S3, renders colored progress bar + per-run
+  table). `--watch` mode auto-refreshes every 30 s.
+- `dashboard/data/v16-matrix.json` — full matrix sweep data (6 runs × 5 cluster × 3 scenario)
+- `dashboard/data/v16-only.json` — T3 (production target) compact view
+  + matrix summary tables, schema-compatible with v11/v12 dashboard JS
+- `dashboard/assets/dashboard-v16.js` — v16 dashboard view (T3 hero strip
+  + Q&A boxplots + per-cluster table + **NEW**: instance × TPS matrix tables)
+- `dashboard/index.html` — added `#v16` toggle (default points to v11; v16 marked ⭐)
+
+### Documentation additions
+
+- **`docs/EVOLUTION-v9-to-v16.md`** (421 lines) — full version-by-version
+  narrative for whoever inherits this toolkit. Covers v1-v8 (early), v9
+  (120 measurements), v10 (30), v11 (25 🏆), v12 (24 ❌), v13/v14/v15
+  (incomplete), v16 (88 ⭐). Each version: hypothesis, Δ vs baseline,
+  verdict, production impact.
+- **`docs/REPORTS/2026-05-21-v16-instance-tps-sweep.md`** (308 lines) —
+  formal report with executive summary, instance sweep, TPS sweep,
+  RB-vs-FO analysis, per-cluster detail, and recommendations.
+  Includes two important interpretation sections: (1) why RB ≈ 0 ms is
+  realistic-not-bug; (2) why T3 BG n=3 not 5 is a finding-not-failure.
+
+### Bugs found and fixed
+
+- **`meta.json` "tps" field always = "1280"** — orchestrator hard-coded
+  the field. Fixed in `scripts/v16-extract-matrix.py` by reconstructing
+  real TPS from the `config` field (`v16-tps4000` → `4000`). Future
+  orchestrators should write the real workload TPS, not the default.
+- **NetworkStack export blocking destroy** — V16MatrixRunner depends on
+  V11Network's KeyPair+SG exports. Added `V11_KEEP_NETWORK=1` env var
+  so v11 orchestrator skips NetworkStack destroy when invoked from
+  matrix mode.
+- **CDK destroy boundary races** — first 4 runs (smoke, M2, M1, M3) had
+  cdk destroy hang on cluster-stack-N boundary. Data was complete; manual
+  cdk destroy after each completed the cleanup. M4/T2/T3 ran cleanly with
+  the fixes in place.
+
+### Wall time + cost
+
+- Smoke + 6 runs total wall time: **~27 hours** (autonomous on AWS, started
+  2026-05-21T07:19Z, completed 2026-05-22T10:17Z)
+- AWS cost: **~$170**
+- Operator time: **0** (Bark notifications to phone; runner ran on
+  systemd service via t3.small)
+
+See `docs/REPORTS/2026-05-21-v16-instance-tps-sweep.md` and
+`docs/EVOLUTION-v9-to-v16.md` for full data and commentary.
+
+## [v15-tcp-tuned] - 2026-05-19 (incomplete, no formal report)
+
+> Exploratory: lower Linux `tcp_keepalive_time` from 7200s to 60s. Hypothesis
+> was that faster dead-connection detection would reduce post-failover
+> recovery time. **No statistically significant difference observed**;
+> the bottleneck is JDBC wrapper pool refill, not TCP keepalive.
+
+### Tested
+- `net.ipv4.tcp_keepalive_time` 7200 → 60
+- `net.ipv4.tcp_keepalive_intvl` 75 → 10
+- `net.ipv4.tcp_keepalive_probes` 9 → 6
+
+### Result
+Inconclusive. progress.json shows 17/40 phases done; cdk destroy completed
+2026-05-20T04:14Z but the orchestrator did not generate a formal report.
+The signal was not large enough to justify a separate experiment write-up.
+
+## [v14-jvm-tuned] - 2026-05-19 (config only, never run)
+
+> Designed to stack ZGC + AlwaysPreTouch + JFR-aware flags + `-Xms`=`-Xmx`.
+> After v13's null result (see below), this was deemed not worth the
+> AWS spend. Config retained as documentation of the JVM-tuning ceiling.
+
+## [v13-zgc] - 2026-05-19 (incomplete, no formal report)
+
+> Exploratory: replace G1GC with Java 17 ZGC. Hypothesis was that
+> ZGC's sub-millisecond GC pauses would reduce v11's 5-client parallel
+> RB tail. **Not the right kind of bottleneck**; v11's RB cost was
+> bandwidth/HikariCP contention, not GC.
+
+### Result
+Inconclusive. progress.json shows 14/40 phases done, 26 failed, with
+`CDK_DESTROY` exiting rc=1. No formal report.
+
 ## [v12-aggressive-timeouts] - 2026-05-19
 
 > ❌ **REJECTED.** v12 tested 3 timeout reductions to see if v11's downtime

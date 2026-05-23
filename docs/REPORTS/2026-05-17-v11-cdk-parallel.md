@@ -1,7 +1,7 @@
 # v11-CDK-Parallel Final Report — 2026-05-17
 
 > **Experiment**: v11-cdk-parallel  
-> **Generated**: 2026-05-19T06:05:05Z  
+> **Generated**: 2026-05-19T19:00:20Z  
 > **Infrastructure**: AWS CDK (Python) — full IaC  
 > **Parallelism**: 5 clusters in parallel  
 > **N measurements**: BG=5, Failover=10, Reboot=10  
@@ -221,4 +221,4 @@ remains as the reference implementation.
 
 ---
 
-*Auto-generated from `dashboard/data/v11-only.json` (2026-05-19T06:05:05Z).*
+*Auto-generated from `dashboard/data/v11-only.json` (2026-05-19T19:00:20Z).*
