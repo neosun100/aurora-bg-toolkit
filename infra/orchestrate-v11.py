@@ -785,13 +785,18 @@ class V11Orchestrator:
         fetch_events(pre_reboot_dt)
 
         # Persist state to round_dir for offline analysis
+        # Note: round_dir from _start_client may be a str, not a Path —
+        # always normalise via pathlib.Path before .iterdir().
         try:
-            inner_dirs = [d for d in round_dir.iterdir() if d.is_dir()]
-            target_dir = inner_dirs[0] if inner_dirs else round_dir
+            from pathlib import Path as _Path
+            rd = _Path(round_dir)
+            inner_dirs = [d for d in rd.iterdir() if d.is_dir()]
+            target_dir = inner_dirs[0] if inner_dirs else rd
             (target_dir / "rds-server-state.json").write_text(
                 json.dumps(rb_state, indent=2, default=str)
             )
-            log.info("[%s] RB R%d: server-state.json written", cluster_id, round_no)
+            log.info("[%s] RB R%d: server-state.json written to %s",
+                     cluster_id, round_no, target_dir)
         except Exception as e:
             log.warning("[%s] failed to write server-state: %s", cluster_id, e)
 
