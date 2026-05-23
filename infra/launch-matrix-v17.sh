@@ -132,7 +132,7 @@ log "Step 5/8: wait for runner EC2 cloud-init (up to 5 min)"
 SSH_OPTS="-i $KEY_PATH -o StrictHostKeyChecking=no -o LogLevel=ERROR -o ConnectTimeout=10"
 for i in {1..30}; do
     if ssh $SSH_OPTS ec2-user@"$RUNNER_IP" \
-        "test -f /var/log/abt-v16-runner-userdata.log && grep -q 'user-data complete' /var/log/abt-v16-runner-userdata.log" 2>/dev/null; then
+        "test -f /var/log/abt-v17-runner-userdata.log && grep -q 'user-data complete' /var/log/abt-v17-runner-userdata.log" 2>/dev/null; then
         ok "Runner SSH-ready (cloud-init complete)"
         break
     fi
