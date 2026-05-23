@@ -1,0 +1,69 @@
+# V16-TPS4000 — Matrix sweep production-target TPS tier.
+#
+# Arithmetic: 80 threads × 20ms intervalMs = 80 / 0.020s = 4000 ops/s
+#
+# This matches HashKey customer's stated production target for Hong Kong
+# site upgrade (3000-4000 TPS). Used for the "Steven-grade" report.
+#
+# Pool sizing rationale: at 4000 ops/s with 20ms latency budget,
+# concurrent in-flight ops ≈ 4000 × 0.020 = 80. Pool=120 gives 50% headroom
+# for transient stalls during failover. Higher than v11's 50, so we MUST
+# also bump JVM heap and EC2 client size (handled by v16-T2/T3 stacks).
+#
+# Required JVM flags (same as v11 + heap bumped):
+#   -Dnetworkaddress.cache.ttl=5
+#   -Dnetworkaddress.cache.negative.ttl=2
+#   --add-opens java.base/java.lang=ALL-UNNAMED
+#   --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+#   -Xmx4g  (orchestrator overrides via V11_EXTRA_JVM='-Xmx4g')
+#
+# IMPORTANT: at 4000 ops/s × 5 clusters = 20,000 aggregate ops/s on a
+# single EC2 client, c6i.2xlarge (8 vCPU/16 GiB) is undersized.
+# orchestrate-matrix.py uses c6i.8xlarge (32 vCPU/64 GiB) for T3.
+#
+name: v17-tps4000
+description: v17 deep-dive (FINER + 100Hz STATS) -- v16 matrix-sweep production-target TPS (4000 ops/s, 80 threads × 20ms, pool=120).
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+jdbc:
+  wrapperPlugins:
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 50
+  connectTimeout: 1000
+  socketTimeout: 3000
+  failureDetectionTime: 6000
+  failureDetectionInterval: 1000
+  failureDetectionCount: 3
+  wrapperLoggerLevel: FINER
+
+hikari:
+  maximumPoolSize: 120
+  minimumIdle: 120
+  initializationFailTimeout: -1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 80
+  intervalMs: 20
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: true
+    delayMs: 25
+  statsReporterHz: 100

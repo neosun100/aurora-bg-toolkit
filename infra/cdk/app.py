@@ -29,6 +29,7 @@ from stacks.network_stack import NetworkStack
 from stacks.cluster_stack import ClusterStack
 from stacks.client_stack import ClientStack
 from stacks.matrix_runner_stack import MatrixRunnerStack
+from stacks.matrix_runner_stack_v17 import MatrixRunnerStack as MatrixRunnerStackV17
 
 
 CLUSTER_COUNT = 5  # 5 parallel Aurora clusters
@@ -92,5 +93,21 @@ if os.environ.get("INCLUDE_MATRIX_RUNNER", "0") == "1":
     runner.add_dependency(network)
     cdk.Tags.of(runner).add("project", "aurora-bg-toolkit")
     cdk.Tags.of(runner).add("experiment", "v16-matrix")
+
+# 5) (v17) Optional MatrixRunnerStack v17 — reboot deep-dive re-validation.
+# Same shape as v16 but writes to a different S3 bucket and SNS topic so the
+# v16 raw artifacts are preserved as historical record.
+if os.environ.get("INCLUDE_MATRIX_RUNNER_V17", "0") == "1":
+    runner_v17 = MatrixRunnerStackV17(
+        app, "AbtV17MatrixRunnerStack",
+        env=env,
+        vpc_id=cdk.Fn.import_value("AbtV11VpcId"),
+        sg_id=cdk.Fn.import_value("AbtV11SgId"),
+        key_name=cdk.Fn.import_value("AbtV11KeyName"),
+        notification_email=os.environ.get("ABT_NOTIFICATION_EMAIL", "").strip() or None,
+    )
+    runner_v17.add_dependency(network)
+    cdk.Tags.of(runner_v17).add("project", "aurora-bg-toolkit")
+    cdk.Tags.of(runner_v17).add("experiment", "v17-reboot-deepdive")
 
 app.synth()

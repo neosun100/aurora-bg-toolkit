@@ -1,0 +1,66 @@
+# V16-TPS1280 — Matrix sweep baseline TPS (production-current).
+#
+# Identical to v11-final.yaml at every layer (JDBC, HikariCP, JVM flags,
+# workload). The only thing v16 changes vs v11 is the surrounding
+# orchestration: Aurora instance class is parameterized by env var, and
+# the runs chain together in a matrix sweep.
+#
+# Workload arithmetic:
+#   64 threads × 50ms intervalMs = 64 / 0.05s = 1280 ops/s
+#
+# Matches HSK customer's stg-environment current load (1100 TPS measured).
+# This is the "small" load tier in the matrix.
+#
+# Required JVM flags (same as v11):
+#   -Dnetworkaddress.cache.ttl=5
+#   -Dnetworkaddress.cache.negative.ttl=2
+#   --add-opens java.base/java.lang=ALL-UNNAMED
+#   --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+#   -Xmx2g
+#
+name: v17-tps1280
+description: v17 deep-dive (FINER + 100Hz STATS) -- v16 matrix-sweep baseline TPS (1280 ops/s). Identical to v11-final apart from name.
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+jdbc:
+  wrapperPlugins:
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 50
+  connectTimeout: 1000
+  socketTimeout: 3000
+  failureDetectionTime: 6000
+  failureDetectionInterval: 1000
+  failureDetectionCount: 3
+  wrapperLoggerLevel: FINER
+
+hikari:
+  maximumPoolSize: 50
+  minimumIdle: 50
+  initializationFailTimeout: -1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 64
+  intervalMs: 50
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: true
+    delayMs: 25
+  statsReporterHz: 100

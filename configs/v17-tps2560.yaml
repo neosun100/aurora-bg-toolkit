@@ -1,0 +1,62 @@
+# V16-TPS2560 — Matrix sweep medium TPS tier.
+#
+# Arithmetic: 64 threads × 25ms intervalMs = 64 / 0.025s = 2560 ops/s
+#
+# Pool sizing rationale: at 2560 ops/s with 25ms latency budget,
+# concurrent in-flight ops ≈ 2560 × 0.025 = 64. Pool=50 is undersized;
+# bumped to 80 to avoid getConnection() queueing under brief Aurora
+# control-plane stalls (e.g. mid-failover).
+#
+# Required JVM flags (same as v11):
+#   -Dnetworkaddress.cache.ttl=5
+#   -Dnetworkaddress.cache.negative.ttl=2
+#   --add-opens java.base/java.lang=ALL-UNNAMED
+#   --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+#   -Xmx2g
+#
+name: v17-tps2560
+description: v17 deep-dive (FINER + 100Hz STATS) -- v16 matrix-sweep medium TPS (2560 ops/s, 64 threads × 25ms, pool=80).
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+jdbc:
+  wrapperPlugins:
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 50
+  connectTimeout: 1000
+  socketTimeout: 3000
+  failureDetectionTime: 6000
+  failureDetectionInterval: 1000
+  failureDetectionCount: 3
+  wrapperLoggerLevel: FINER
+
+hikari:
+  maximumPoolSize: 80
+  minimumIdle: 80
+  initializationFailTimeout: -1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 64
+  intervalMs: 25
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: true
+    delayMs: 25
+  statsReporterHz: 100

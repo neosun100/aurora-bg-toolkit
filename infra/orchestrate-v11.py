@@ -704,11 +704,97 @@ class V11Orchestrator:
         # pool is hot before reboot (otherwise we measure cold-pool reload, not
         # client recovery).
         time.sleep(BUFFER_WARMUP_S)
+
+        # ── v17: reboot deep-dive instrumentation ──
+        # Capture RDS server-side state before/after reboot so we have ground
+        # truth on whether the reboot actually happened (vs client perception).
+        # Without this, we can't distinguish "reboot truly transparent" from
+        # "reboot didn't actually affect the writer" when client logs are quiet.
+        rb_state = {
+            "cluster_id": cluster_id,
+            "round": round_no,
+            "writer_instance_id": f"{cluster_id}-writer",
+            "snapshots": [],
+            "events": [],
+        }
+
+        def snapshot(label: str):
+            try:
+                inst = self.rds.describe_db_instances(
+                    DBInstanceIdentifier=f"{cluster_id}-writer"
+                )["DBInstances"][0]
+                rb_state["snapshots"].append({
+                    "label": label,
+                    "ts": datetime.datetime.utcnow().isoformat(timespec="milliseconds") + "Z",
+                    "status": inst.get("DBInstanceStatus"),
+                    "endpoint": inst.get("Endpoint", {}).get("Address"),
+                    "pending_modified_values": inst.get("PendingModifiedValues", {}),
+                    "latest_restorable_time": str(inst.get("LatestRestorableTime", "")),
+                })
+            except Exception as e:
+                rb_state["snapshots"].append({"label": label, "error": str(e)[:200]})
+
+        def fetch_events(start_dt):
+            try:
+                resp = self.rds.describe_events(
+                    SourceIdentifier=f"{cluster_id}-writer",
+                    SourceType="db-instance",
+                    StartTime=start_dt,
+                    Duration=10,  # last 10 minutes
+                )
+                rb_state["events"] = [{
+                    "ts": e["Date"].isoformat(timespec="seconds"),
+                    "category": e.get("EventCategories", []),
+                    "message": e.get("Message", "")[:300],
+                } for e in resp.get("Events", [])]
+            except Exception as e:
+                rb_state["events_error"] = str(e)[:200]
+
+        # Pre-reboot snapshot
+        pre_reboot_dt = datetime.datetime.utcnow()
+        snapshot("pre_reboot")
+
         log.info("[%s] RB R%d: reboot-db-instance %s-writer", cluster_id, round_no, cluster_id)
-        self.rds.reboot_db_instance(DBInstanceIdentifier=f"{cluster_id}-writer")
+        rb_call_start = datetime.datetime.utcnow()
+        try:
+            api_resp = self.rds.reboot_db_instance(DBInstanceIdentifier=f"{cluster_id}-writer")
+            rb_state["api_call"] = {
+                "ts": rb_call_start.isoformat(timespec="milliseconds") + "Z",
+                "duration_ms": int((datetime.datetime.utcnow() - rb_call_start).total_seconds() * 1000),
+                "response_status": api_resp.get("DBInstance", {}).get("DBInstanceStatus"),
+            }
+        except Exception as e:
+            rb_state["api_call"] = {"error": str(e)[:300]}
+            log.error("[%s] reboot_db_instance failed: %s", cluster_id, e)
+
+        # Sample server state every 5 seconds for the first 60 seconds after reboot
+        # (this is the critical window — captures status flip rebooting → available)
+        for i in range(12):
+            time.sleep(5)
+            snapshot(f"post_reboot_+{(i+1)*5}s")
+
         # v16: REBOOT_STABILIZE_S env-tunable. 8X can take 5+ min for the buffer
         # pool to fully reload to steady-state TPS; 90s default is fine for r7g.large.
-        time.sleep(REBOOT_STABILIZE_S)
+        # v17: 60s of sampling already done above, so reduce remaining sleep
+        remaining = max(REBOOT_STABILIZE_S - 60, 0)
+        if remaining > 0:
+            time.sleep(remaining)
+
+        # Final snapshot + fetch all events from this reboot window
+        snapshot("post_reboot_final")
+        fetch_events(pre_reboot_dt)
+
+        # Persist state to round_dir for offline analysis
+        try:
+            inner_dirs = [d for d in round_dir.iterdir() if d.is_dir()]
+            target_dir = inner_dirs[0] if inner_dirs else round_dir
+            (target_dir / "rds-server-state.json").write_text(
+                json.dumps(rb_state, indent=2, default=str)
+            )
+            log.info("[%s] RB R%d: server-state.json written", cluster_id, round_no)
+        except Exception as e:
+            log.warning("[%s] failed to write server-state: %s", cluster_id, e)
+
         return self._stop_client_and_analyze(cluster_id, "reboot", round_no, "v11rb", round_dir)
 
     # ─────── helpers ───────

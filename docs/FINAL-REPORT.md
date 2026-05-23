@@ -10,6 +10,29 @@
 
 ---
 
+## ⚠️⚠️⚠️ 重要更新（2026-05-23 23:00 UTC+8）：Reboot 章节正在重测验证
+
+**审查 v16 raw logs 时发现 reboot 测量数据存在严重盲点**：
+
+- v16 所有 reboot 测试中 `write_max_ms = 0 ms`，但客户端 `ec2_wrapper.log` 完全没有任何 wrapper plugin 事件（无 failoverWriter、无 connection broken、无 SQLException）
+- 对比 v11 历史 reboot 测试（已知有 ~7 秒 gap）：v11 日志有 10,359 行非 STATS 事件 + 69 次 `write_ok=0`；而 v16 同样测试只有 17 行非 STATS 事件（仅启动+关闭）+ 0 次 `write_ok=0`
+- 这种"完全无感"不像真实的 reboot 透明，更像测量盲点或 reboot 没有真正影响 writer
+
+**当前状态**：v17 重测正在进行中（reboot deep-dive + full matrix re-validation）
+
+- 增强 instrumentation：服务端拍 `describe-db-instances` 快照、客户端 `wrapperLoggerLevel=FINER` + 100Hz STATS reporter
+- 预计完成时间：~24 小时（2026-05-24 晚上左右）
+- 预计成本：~$170 AWS
+
+**在 v17 验证完成前**：
+- ❌ **不要**以"RB ≈ 0 ms / cluster auto-failover transparent"作为生产承诺
+- ✅ 应该参考 **v11 历史数据：RB median ~7 秒、max ~8 秒**（writer-only cluster 拓扑）作为保守估计
+- ✅ 应用层 reboot 容忍度建议设 ≥ 8 秒，等 v17 数据出来再调整
+
+本报告其余部分（BG / FO / 参数配置 / 不要碰清单）的结论不受此影响，可以正常使用。
+
+---
+
 ## 📋 目录
 
 1. [TL;DR — 一页给老板看的版本](#tldr)
