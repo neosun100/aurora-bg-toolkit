@@ -40,20 +40,71 @@ STATE_DIR = REPO_ROOT / "infra" / "state"
 #   V11_CONFIG=v12-aggressive-timeouts python3 infra/orchestrate-v11.py
 # Default: v11-final (production baseline)
 ACTIVE_CONFIG = os.environ.get("V11_CONFIG", "v11-final")
-EXPERIMENT_NAME = f"v11-cdk-parallel" if ACTIVE_CONFIG == "v11-final" else f"v12-{ACTIVE_CONFIG.replace('v12-', '')}"
+# v16: matrix runs set V11_RUN_LABEL like "v16-M3-r7g4xl-tps1280" — use that
+# as EXPERIMENT_NAME when set so reports/dashboards show meaningful labels.
+_run_label_early = os.environ.get("V11_RUN_LABEL", "").strip()
+if _run_label_early:
+    EXPERIMENT_NAME = _run_label_early
+elif ACTIVE_CONFIG == "v11-final":
+    EXPERIMENT_NAME = "v11-cdk-parallel"
+elif ACTIVE_CONFIG.startswith("v12"):
+    EXPERIMENT_NAME = ACTIVE_CONFIG  # e.g. v12-aggressive-timeouts
+elif ACTIVE_CONFIG.startswith("v13"):
+    EXPERIMENT_NAME = ACTIVE_CONFIG  # e.g. v13-zgc
+else:
+    EXPERIMENT_NAME = ACTIVE_CONFIG
 
-# State files are per-config so v11 and v12 don't clobber each other
-_state_prefix = "v11" if ACTIVE_CONFIG == "v11-final" else "v12"
+# Optional extra JVM flags injected before -Xmx (e.g. -XX:+UseZGC for v13-zgc).
+# Example:
+#   V11_EXTRA_JVM='-XX:+UseZGC' V11_CONFIG=v13-zgc python3 infra/orchestrate-v11.py
+EXTRA_JVM_FLAGS = os.environ.get("V11_EXTRA_JVM", "").strip()
+
+# Optional: apply Linux TCP keepalive sysctl tuning to EC2 (for v15-tcp-tuned).
+# Set V11_APPLY_SYSCTL=1 to enable.
+APPLY_SYSCTL = os.environ.get("V11_APPLY_SYSCTL", "0") == "1"
+
+# State files are per-config so v11 and v12 don't clobber each other.
+# v16 matrix mode: V11_STATE_PREFIX env var overrides this entirely so each
+# matrix run gets its own progress.json (e.g. "v16-M1-r7g-large-1280").
+_explicit_prefix = os.environ.get("V11_STATE_PREFIX", "").strip()
+if _explicit_prefix:
+    _state_prefix = _explicit_prefix
+else:
+    _state_prefix = "v11" if ACTIVE_CONFIG == "v11-final" else (
+        "v12" if ACTIVE_CONFIG.startswith("v12") else
+        "v13" if ACTIVE_CONFIG.startswith("v13") else
+        "v14" if ACTIVE_CONFIG.startswith("v14") else
+        "v15" if ACTIVE_CONFIG.startswith("v15") else
+        "v16" if ACTIVE_CONFIG.startswith("v16") else
+        ACTIVE_CONFIG
+    )
 PROGRESS_FILE = STATE_DIR / f"{_state_prefix}-progress.json"
 LOG_FILE = STATE_DIR / f"{_state_prefix}-master.log"
 LOCK_FILE = STATE_DIR / f"{_state_prefix}-master.lock"
 CDK_DIR = REPO_ROOT / "infra" / "cdk"
 
 CLUSTER_COUNT = 5
-ROUNDS_PER_SCENARIO = 2  # 2 × (BG + FO + RB) per cluster = 6 measurements/cluster
+# v16 matrix mode: ROUNDS_PER_SCENARIO defaults to 1 (5 cluster × 1 round =
+# 5 measurements per scenario) which is what the customer asked for. Legacy
+# v11/v12 runs (and anything that explicitly sets V11_ROUNDS=2) keep R1+R2.
+ROUNDS_PER_SCENARIO = int(os.environ.get("V11_ROUNDS", "2"))
 CLUSTER_IDS = [f"test-v11-{i}" for i in range(1, CLUSTER_COUNT + 1)]
 
-AWS_PROFILE = os.environ.get("AWS_PROFILE", "jiasunm-neo")
+# ────────────────── v16 tunables (env-driven) ──────────────────
+# Reboot stabilization: 8X buffer pool can take 5+ min to warm back up after
+# reboot, vs r7g.large which is fine in 90s. Matrix orchestrator overrides
+# per run.
+REBOOT_STABILIZE_S = int(os.environ.get("V11_REBOOT_STABILIZE_S", "90"))
+BUFFER_WARMUP_S = int(os.environ.get("V11_BUFFER_WARMUP_S", "60"))
+
+# JVM heap: pool=120 (TPS 4000) needs more heap. Default keeps v11 at 2g.
+JVM_HEAP_FLAG = os.environ.get("V11_HEAP_FLAG", "-Xmx2g")
+
+# Run-label tag baked into e2e-results subdir for matrix data aggregation.
+# e.g. "v16-M3-r7g4xl-tps1280" → e2e-results subdir gets that suffix.
+RUN_LABEL = os.environ.get("V11_RUN_LABEL", "").strip()
+
+AWS_PROFILE = os.environ.get("AWS_PROFILE", "")
 AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
 
 NETWORK_STACK = "AbtV11NetworkStack"
@@ -106,6 +157,21 @@ def phase_status(name) -> str:
         return p["phases"].get(name, {}).get("status", "pending")
 
 
+# v16: pluggable sync hook called after each phase_set. The matrix
+# orchestrator injects a callback that uploads progress.json + master.log
+# to S3 every time so any user can pull state from anywhere.
+SYNC_HOOK = None
+
+
+def _maybe_sync():
+    if SYNC_HOOK is None:
+        return
+    try:
+        SYNC_HOOK()
+    except Exception as e:  # never let sync failure kill the run
+        log.warning("sync hook raised: %s", e)
+
+
 def phase_set(name, status, **kwargs):
     with progress() as p:
         ph = p["phases"].setdefault(name, {})
@@ -123,6 +189,7 @@ def phase_set(name, status, **kwargs):
                 pass
         for k, v in kwargs.items():
             ph[k] = v
+    _maybe_sync()
 
 
 def phase_record_error(name, err):
@@ -145,8 +212,15 @@ def sh(cmd: list[str], cwd: Path | None = None, env: dict | None = None,
     )
 
 
-def ssh_run(public_ip: str, key_path: Path, cmd: str, timeout: int = 60) -> str:
-    """Run a shell snippet on the EC2 runner via SSH. Returns stdout."""
+def ssh_run(public_ip: str, key_path: Path, cmd: str, timeout: int = 60,
+            retries: int = 3) -> str:
+    """Run a shell snippet on the EC2 runner via SSH. Returns stdout.
+
+    v16 enhancement: retry up to `retries` times on connection failures
+    (ECONNRESET / banner timeout / etc.) which were the dominant failure
+    mode in v15. Real command failures (non-zero exit on the remote side)
+    do NOT retry — those are real errors.
+    """
     full = [
         "ssh", "-i", str(key_path),
         "-o", "StrictHostKeyChecking=no",
@@ -154,34 +228,98 @@ def ssh_run(public_ip: str, key_path: Path, cmd: str, timeout: int = 60) -> str:
         "-o", "ConnectTimeout=10",
         f"ec2-user@{public_ip}", cmd,
     ]
-    r = subprocess.run(full, capture_output=True, text=True, timeout=timeout)
-    if r.returncode != 0:
-        raise RuntimeError(f"ssh failed (rc={r.returncode}): {r.stderr.strip()[:500]}")
-    return r.stdout
+    last_err = None
+    for attempt in range(retries):
+        r = subprocess.run(full, capture_output=True, text=True, timeout=timeout)
+        if r.returncode == 0:
+            return r.stdout
+        # SSH-level transport errors → retry
+        stderr = (r.stderr or "").lower()
+        is_transport = any(s in stderr for s in (
+            "connection timed out during banner exchange",
+            "kex_exchange_identification",
+            "connection reset by peer",
+            "connection refused",
+            "no route to host",
+            "broken pipe",
+        ))
+        last_err = RuntimeError(
+            f"ssh failed (rc={r.returncode}): {r.stderr.strip()[:500]}"
+        )
+        if is_transport and attempt < retries - 1:
+            sleep_s = 5 * (2 ** attempt)
+            log.warning("ssh transport error (attempt %d/%d), retry in %ds: %s",
+                        attempt + 1, retries, sleep_s, r.stderr.strip()[:200])
+            time.sleep(sleep_s)
+            continue
+        break
+    raise last_err
 
 
-def scp_to(public_ip: str, key_path: Path, local: Path, remote: str, timeout: int = 120):
+def scp_to(public_ip: str, key_path: Path, local: Path, remote: str,
+           timeout: int = 120, retries: int = 3):
+    """SCP local→remote with retry on transport errors. v16 enhancement."""
     cmd = [
         "scp", "-i", str(key_path),
         "-o", "StrictHostKeyChecking=no", "-o", "LogLevel=ERROR",
+        "-o", "ConnectTimeout=10",
         str(local), f"ec2-user@{public_ip}:{remote}",
     ]
-    subprocess.run(cmd, check=True, timeout=timeout)
+    last_err = None
+    for attempt in range(retries):
+        try:
+            subprocess.run(cmd, check=True, timeout=timeout, capture_output=True, text=True)
+            return
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            last_err = e
+            if attempt < retries - 1:
+                sleep_s = 5 * (2 ** attempt)
+                log.warning("scp_to attempt %d/%d failed (%s), retry in %ds",
+                            attempt + 1, retries, type(e).__name__, sleep_s)
+                time.sleep(sleep_s)
+                continue
+            break
+    raise last_err
 
 
-def scp_from(public_ip: str, key_path: Path, remote: str, local: Path, timeout: int = 120):
+def scp_from(public_ip: str, key_path: Path, remote: str, local: Path,
+             timeout: int = 180, retries: int = 3):
+    """SCP remote→local with retry on transport errors. v16 enhancement.
+
+    Default timeout bumped to 180s (was 120s) because high-TPS ec2_wrapper.log
+    can be 100MB+ and slow on saturated networks.
+    """
     cmd = [
         "scp", "-i", str(key_path),
         "-o", "StrictHostKeyChecking=no", "-o", "LogLevel=ERROR",
+        "-o", "ConnectTimeout=10",
         f"ec2-user@{public_ip}:{remote}", str(local),
     ]
-    subprocess.run(cmd, check=True, timeout=timeout)
+    last_err = None
+    for attempt in range(retries):
+        try:
+            subprocess.run(cmd, check=True, timeout=timeout, capture_output=True, text=True)
+            return
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            last_err = e
+            if attempt < retries - 1:
+                sleep_s = 10 * (2 ** attempt)  # longer waits for big files
+                log.warning("scp_from attempt %d/%d failed (%s), retry in %ds",
+                            attempt + 1, retries, type(e).__name__, sleep_s)
+                time.sleep(sleep_s)
+                continue
+            break
+    raise last_err
 
 
 # ────────────────── orchestrator ──────────────────
 class V11Orchestrator:
     def __init__(self):
-        self.session = boto3.Session(profile_name=AWS_PROFILE, region_name=AWS_REGION)
+        # Use named profile if set (local dev), else IAM role (runner EC2)
+        if AWS_PROFILE:
+            self.session = boto3.Session(profile_name=AWS_PROFILE, region_name=AWS_REGION)
+        else:
+            self.session = boto3.Session(region_name=AWS_REGION)
         self.cf = self.session.client("cloudformation")
         self.rds = self.session.client("rds")
         self.ec2 = self.session.client("ec2")
@@ -457,6 +595,27 @@ class V11Orchestrator:
                        p, f"/home/ec2-user/aurora-bg-toolkit/configs/{cfg}")
         log.info("uploaded jar + configs to EC2")
 
+        # Apply sysctl tuning if requested (v15-tcp-tuned)
+        if APPLY_SYSCTL:
+            log.info("applying TCP keepalive sysctl tuning (v15)...")
+            sysctl_cmd = (
+                "sudo sysctl -w net.ipv4.tcp_keepalive_time=60 && "
+                "sudo sysctl -w net.ipv4.tcp_keepalive_intvl=10 && "
+                "sudo sysctl -w net.ipv4.tcp_keepalive_probes=6 && "
+                "echo 'net.ipv4.tcp_keepalive_time=60' | sudo tee -a /etc/sysctl.conf > /dev/null && "
+                "echo 'net.ipv4.tcp_keepalive_intvl=10' | sudo tee -a /etc/sysctl.conf > /dev/null && "
+                "echo 'net.ipv4.tcp_keepalive_probes=6' | sudo tee -a /etc/sysctl.conf > /dev/null && "
+                "sysctl net.ipv4.tcp_keepalive_time net.ipv4.tcp_keepalive_intvl "
+                "net.ipv4.tcp_keepalive_probes"
+            )
+            try:
+                out = ssh_run(self.ec2_public_ip, self.key_path, sysctl_cmd, timeout=30)
+                log.info("sysctl tuning applied:\n%s", out)
+            except Exception as e:
+                log.warning("sysctl tuning failed (non-fatal): %s", e)
+        else:
+            log.info("sysctl tuning skipped (APPLY_SYSCTL=0)")
+
     # ───── PHASE: TEST_PARALLEL (5 cluster threads) ─────
     def test_parallel(self):
         log.info("starting 5-cluster parallel execution (%d threads)", CLUSTER_COUNT)
@@ -541,10 +700,15 @@ class V11Orchestrator:
     # ─────── Reboot round ───────
     def _do_reboot_round(self, cluster_id: str, round_no: int) -> tuple[int, int]:
         round_dir = self._start_client(cluster_id, "v11rb", round_no)
-        time.sleep(60)
+        # v16: BUFFER_WARMUP_S env-tunable. 8X needs more warmup so the buffer
+        # pool is hot before reboot (otherwise we measure cold-pool reload, not
+        # client recovery).
+        time.sleep(BUFFER_WARMUP_S)
         log.info("[%s] RB R%d: reboot-db-instance %s-writer", cluster_id, round_no, cluster_id)
         self.rds.reboot_db_instance(DBInstanceIdentifier=f"{cluster_id}-writer")
-        time.sleep(90)
+        # v16: REBOOT_STABILIZE_S env-tunable. 8X can take 5+ min for the buffer
+        # pool to fully reload to steady-state TPS; 90s default is fine for r7g.large.
+        time.sleep(REBOOT_STABILIZE_S)
         return self._stop_client_and_analyze(cluster_id, "reboot", round_no, "v11rb", round_dir)
 
     # ─────── helpers ───────
@@ -715,7 +879,8 @@ class V11Orchestrator:
     def _start_client(self, cluster_id: str, scenario_short: str, round_no: int) -> str:
         round_dir = f"v11{scenario_short[3:]}-{cluster_id}-r{round_no}"
         endpoint = self.cluster_endpoints[cluster_id]
-        # Prepare remote dir + start java
+        # Prepare remote dir + start java. v16: heap size + extra JVM flags
+        # are env-driven so 4000 TPS pool=120 runs can use -Xmx4g.
         snippet = f"""
 rm -rf /home/ec2-user/{round_dir}
 mkdir -p /home/ec2-user/{round_dir}
@@ -727,7 +892,7 @@ DB_ENDPOINT="{endpoint}" DB_PORT=4488 DB_USER=admin DB_NAME=demo \
   nohup java -Dnetworkaddress.cache.ttl=5 -Dnetworkaddress.cache.negative.ttl=2 \
     --add-opens java.base/java.lang=ALL-UNNAMED \
     --add-opens java.base/java.lang.reflect=ALL-UNNAMED \
-    -Xmx2g -jar abt-w401.jar configs/{ACTIVE_CONFIG}.yaml \
+    {EXTRA_JVM_FLAGS} {JVM_HEAP_FLAG} -jar abt-w401.jar configs/{ACTIVE_CONFIG}.yaml \
     > /home/ec2-user/{round_dir}/ec2_wrapper.log 2>&1 &
 echo $! > /home/ec2-user/{round_dir}/ec2_wrapper.pid
 """
@@ -750,15 +915,18 @@ echo $! > /home/ec2-user/{round_dir}/ec2_wrapper.pid
             pass
         time.sleep(5)
 
-        # Pull log
+        # Pull log. v16: include RUN_LABEL in subdir for matrix aggregation.
+        # Path: e2e-results/{run_label}-{scenario}-{cluster}-r{N}_{ts}/{cluster}_{config}/
+        # Falls back to v11 layout when RUN_LABEL is empty.
+        ts = datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+        prefix = (RUN_LABEL + "-") if RUN_LABEL else "v11-"
         local_round_dir = (REPO_ROOT / "e2e-results" /
-                          f"v11-{scenario}-{cluster_id}-r{round_no}_"
-                          f"{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}" /
+                          f"{prefix}{scenario}-{cluster_id}-r{round_no}_{ts}" /
                           f"{cluster_id}_{ACTIVE_CONFIG}")
         local_round_dir.mkdir(parents=True, exist_ok=True)
         scp_from(self.ec2_public_ip, self.key_path,
                  f"/home/ec2-user/{round_dir}/ec2_wrapper.log",
-                 local_round_dir / "ec2_wrapper.log", timeout=180)
+                 local_round_dir / "ec2_wrapper.log", timeout=300)
 
         meta = {
             "runId": f"{cluster_id}_{ACTIVE_CONFIG}_{scenario_short}_r{round_no}",
@@ -768,6 +936,12 @@ echo $! > /home/ec2-user/{round_dir}/ec2_wrapper.pid
             "cluster": cluster_id,
             "wrapperJar": "abt-w401.jar",
             "experiment": EXPERIMENT_NAME,
+            # v16 matrix metadata
+            "runLabel": RUN_LABEL or None,
+            "writerInstance": os.environ.get("V11_WRITER_INSTANCE", "r7g.large"),
+            "readerInstance": os.environ.get("V11_READER_INSTANCE", "t3.medium"),
+            "clientInstance": os.environ.get("V11_CLIENT_INSTANCE", "c6i.2xlarge"),
+            "tps": os.environ.get("V11_TPS", "1280"),
         }
         (local_round_dir / "meta.json").write_text(json.dumps(meta))
 
@@ -848,21 +1022,34 @@ echo $! > /home/ec2-user/{round_dir}/ec2_wrapper.pid
                 time.sleep(15)
 
         # ─── 3. Now run cdk destroy ───
-        log.info("cdk destroy --all (~12 min)...")
+        # In matrix mode (V11_KEEP_NETWORK=1), only destroy ClusterStacks + ClientStack;
+        # NetworkStack is shared with V16MatrixRunnerStack and must be preserved.
+        keep_network = os.environ.get("V11_KEEP_NETWORK", "0") == "1"
+        if keep_network:
+            stacks_to_destroy = [
+                "AbtV11ClusterStack-1", "AbtV11ClusterStack-2",
+                "AbtV11ClusterStack-3", "AbtV11ClusterStack-4",
+                "AbtV11ClusterStack-5", "AbtV11ClientStack"
+            ]
+            log.info("cdk destroy ClusterStacks + ClientStack (keeping NetworkStack, ~12 min)...")
+            cmd = ["cdk", "destroy", *stacks_to_destroy, "--force"]
+        else:
+            log.info("cdk destroy --all (~12 min)...")
+            cmd = ["cdk", "destroy", "--all", "--force"]
         full_env = os.environ.copy()
         full_env.update(env)
         proc = subprocess.Popen(
-            ["cdk", "destroy", "--all", "--force"],
+            cmd,
             cwd=CDK_DIR, env=full_env,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )
         try:
             for line in proc.stdout:
                 log.info("[cdk-destroy] %s", line.rstrip())
-            rc = proc.wait(timeout=1800)
+            rc = proc.wait(timeout=3600)
         except subprocess.TimeoutExpired:
             proc.kill()
-            raise RuntimeError("cdk destroy timed out (1800 s)")
+            raise RuntimeError("cdk destroy timed out (3600 s)")
         if rc != 0:
             raise RuntimeError(f"cdk destroy --all exited with rc={rc}")
         log.info("cdk destroy complete")

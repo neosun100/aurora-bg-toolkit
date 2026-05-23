@@ -1,0 +1,107 @@
+# V15-TCP-TUNED — Linux kernel TCP keepalive tuning (OS-level optimization).
+#
+# This is the most aggressive client-side optimization we can apply without
+# changing application code or the JDBC wrapper. It's an OS-level tunable
+# that affects how TCP itself detects dead connections.
+#
+# What we change (EC2 sysctl):
+#   net.ipv4.tcp_keepalive_time   = 60    (was 7200)
+#   net.ipv4.tcp_keepalive_intvl  = 10    (was 75)
+#   net.ipv4.tcp_keepalive_probes = 6     (was 9)
+#
+# Translation: dead connection detection time drops from
+#   default: 7200 + 75 * 9    = 7875 s  (~2 hours)
+#   tuned:   60   + 10 * 6    = 120 s   (~2 minutes)
+#
+# Why this complements HikariCP keepaliveTime:
+#   HikariCP keepaliveTime=60s sends a SQL "SELECT 1" application-layer ping.
+#   This catches connections where the SQL endpoint is dead but TCP is fine.
+#
+#   Linux TCP keepalive sends a TCP-level ping. This catches connections
+#   where the TCP endpoint went away (e.g., RDS reboot dropped the connection
+#   without sending FIN). HikariCP's SQL ping won't fire if the JDBC wrapper
+#   is blocked in a recv() syscall waiting for data.
+#
+# Hypothesis (H1): During RDS reboot, some sockets enter half-open state
+#   (the writer rebooted without sending FIN). The default 2-hour TCP
+#   keepalive means the JVM might wait minutes before realizing the
+#   connection is dead. Tighter TCP keepalive should let the kernel
+#   surface ECONNRESET faster, reducing tail latency.
+#
+# Stacked optimizations vs v11 baseline:
+#   v13: + ZGC
+#   v14: + AlwaysPreTouch + StringDedup + fixed Xms
+#   v15: + Linux TCP keepalive 60/10/6 (this version)
+#
+# How it's applied:
+#   The orchestrator's _apply_sysctl_tuning() phase applies these via SSH
+#   to the EC2 instance after EC2_PROVISION completes. Set the env var:
+#     V11_APPLY_SYSCTL=1
+#
+# Hypothesis (H2): If v14 already brings RB to ~6s, v15 might bring it to
+#   ~5s by avoiding the rare half-open socket scenarios.
+#   If v14 doesn't help, v15 probably won't either — but worth verifying.
+#
+# Decision criteria:
+#   ✅ ACCEPT if: RB median improves ≥500ms vs v14 (or v13 if v14 rejected)
+#   ⚠️ NEUTRAL if: improvement <500ms (marginal, OS tuning adds complexity)
+#   ❌ REJECT if: any scenario regresses ≥500ms median or ≥1.5s max
+#
+# Production deployment cost: requires sysctl change on application hosts.
+# This is non-trivial: needs root, persists across reboots, and may affect
+# other services on the same host. Customer should weigh against the
+# measured benefit.
+#
+# How to run:
+#   V11_CONFIG=v15-tcp-tuned \
+#   V11_EXTRA_JVM='-XX:+UnlockExperimentalVMOptions -XX:+UseZGC -XX:+AlwaysPreTouch -XX:+UseStringDeduplication -Xms2g' \
+#   V11_APPLY_SYSCTL=1 \
+#   nohup python3 infra/orchestrate-v11.py &
+#
+name: v15-tcp-tuned
+description: v14 (ZGC+PreTouch+StringDedup) + Linux TCP keepalive 60/10/6 sysctl
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+# JDBC, HikariCP, workload — all IDENTICAL to v11/v14
+jdbc:
+  wrapperPlugins:
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 50
+  connectTimeout: 1000
+  socketTimeout: 3000
+  failureDetectionTime: 6000
+  failureDetectionInterval: 1000
+  failureDetectionCount: 3
+  wrapperLoggerLevel: INFO
+
+hikari:
+  maximumPoolSize: 50
+  minimumIdle: 50
+  initializationFailTimeout: -1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 64
+  intervalMs: 50
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: true
+    delayMs: 25
+  statsReporterHz: 10

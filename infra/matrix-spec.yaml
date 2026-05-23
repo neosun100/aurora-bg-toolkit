@@ -1,0 +1,139 @@
+# Aurora BG Toolkit v16 — Matrix Sweep Specification
+#
+# Defines every run the matrix orchestrator should execute, in order.
+# Each run = one full v11 orchestrator cycle (deploy → 5 cluster × 1 round
+# × 3 scenarios → analyze → destroy) with specific instance class + TPS.
+#
+# Customer goal (HashKey): validate that v11 config is the production-optimal
+# choice across instance classes (1X / 2X / 4X / 8X) and TPS tiers
+# (1280 / 2560 / 4000 ops/s).
+#
+# After all runs complete, scripts/v16-extract-matrix.py aggregates the
+# data and scripts/v16-generate-report.py writes the final report.
+
+# ── Global defaults (override per-run if needed) ──
+defaults:
+  rounds: 1                       # 5 cluster × 1 round = 5 measurements/scenario
+  config: v16-tps1280
+  writer_instance: r7g.large
+  reader_instance: t3.medium
+  client_instance: c6i.2xlarge
+  jvm_heap: "-Xmx2g"
+  buffer_warmup_s: 60
+  reboot_stabilize_s: 90
+
+# ── Runs (executed in order) ──
+runs:
+
+  # ── Layer 2: smoke test ──────────────────────────────────────
+  # Fast (~30 min) end-to-end pipeline check: 1 cluster, 1 round, BG only.
+  # If this fails, fix the bug before burning $150 on the matrix.
+  - id: smoke
+    label: smoke-test
+    purpose: pipeline validation (Layer 2)
+    config: v16-tps1280
+    writer_instance: r7g.large
+    reader_instance: t3.medium
+    client_instance: c6i.2xlarge
+    rounds: 1
+    smoke: true                   # special mode: 1 cluster, BG only
+    notes: |
+      Verifies CDK deploy/destroy, EC2 SSH, java client, STATS log,
+      analyze-stats-gap, S3 sync, SNS publish. ~30min, ~$1.
+
+  # ── Layer 3: M2 single-run verification ───────────────────────
+  # First real matrix run. Validates instance-type parameterization end-to-end.
+  - id: M2
+    label: v16-M2-r7g2xl-tps1280
+    purpose: instance class sweep (2X) + parameterization verification
+    writer_instance: r7g.2xlarge
+    reader_instance: r7g.large
+    client_instance: c6i.2xlarge
+    config: v16-tps1280
+    rounds: 1
+    notes: |
+      Customer's "2X" requirement. Also serves as Layer 3 verification of
+      the v16 instance-class parameterization. ~1.5h, ~$11.
+
+  # ── Layer 4: full matrix (M1 + M3 + M4 + T2 + T3) ─────────────
+  # M2 already done in Layer 3; the rest run unattended via systemd on the
+  # matrix runner EC2 after Layer 3 passes.
+
+  - id: M1
+    label: v16-M1-r7glarge-tps1280
+    purpose: instance class sweep baseline (1X) — aligns to v11 historical
+    writer_instance: r7g.large
+    reader_instance: t3.medium
+    client_instance: c6i.2xlarge
+    config: v16-tps1280
+    rounds: 1
+    notes: |
+      Reproduces v11 published numbers (BG 4.20s, FO 9.45s, RB 7.10s).
+      Sanity check that the v16 chassis didn't introduce regressions.
+
+  - id: M3
+    label: v16-M3-r7g4xl-tps1280
+    purpose: instance class sweep (4X)
+    writer_instance: r7g.4xlarge
+    reader_instance: r7g.large
+    client_instance: c6i.4xlarge
+    config: v16-tps1280
+    rounds: 1
+    notes: |
+      Mid-tier instance. Mostly to draw the trendline 1X → 2X → 4X → 8X.
+
+  - id: M4
+    label: v16-M4-r7g8xl-tps1280
+    purpose: instance class sweep (8X) + customer production parity
+    writer_instance: r7g.8xlarge
+    reader_instance: r7g.2xlarge
+    client_instance: c6i.4xlarge
+    config: v16-tps1280
+    rounds: 1
+    buffer_warmup_s: 300         # 8X buffer pool: 5min warmup
+    reboot_stabilize_s: 300      # 8X buffer pool: 5min reload
+    notes: |
+      Direct answer to Wang-laoshi's question: how does 8X reboot compare
+      to 8X failover? Larger buffer pool means longer reload, but is the
+      reboot still ≤ failover at 8X scale? Critical for the upgrade decision.
+
+  - id: T2
+    label: v16-T2-r7g8xl-tps2560
+    purpose: TPS sweep (medium load, 8X)
+    writer_instance: r7g.8xlarge
+    reader_instance: r7g.2xlarge
+    client_instance: c6i.8xlarge   # bigger client for higher load
+    config: v16-tps2560
+    rounds: 1
+    jvm_heap: "-Xmx3g"
+    buffer_warmup_s: 300
+    reboot_stabilize_s: 300
+
+  - id: T3
+    label: v16-T3-r7g8xl-tps4000
+    purpose: TPS sweep (production target, 8X) — Steven-grade report
+    writer_instance: r7g.8xlarge
+    reader_instance: r7g.2xlarge
+    client_instance: c6i.8xlarge
+    config: v16-tps4000
+    rounds: 1
+    jvm_heap: "-Xmx4g"
+    buffer_warmup_s: 300
+    reboot_stabilize_s: 300
+    notes: |
+      Hong Kong production target. 4000 ops/s × 5 clusters = 20,000 aggregate
+      ops/s on a c6i.8xlarge (32 vCPU). This is the keystone result given to
+      CTO Steven for the 6-month upgrade authorization.
+
+# ── Failure handling policy ──────────────────────────────────────
+policy:
+  # If a run's CDK deploy fails entirely → skip and continue to next
+  skip_on_deploy_failure: true
+  # If >50% of measurements within a run fail → mark run partial, continue
+  measurement_failure_threshold_pct: 50
+  # Maximum cumulative AWS spend before auto-pause (USD/day; safety net)
+  daily_budget_usd: 300
+  # Time between runs (seconds): RDS control-plane settle + verify cleanup
+  inter_run_pause_s: 180
+  # cdk destroy must verify 0 v11 clusters remaining before next run starts
+  require_clean_destroy: true

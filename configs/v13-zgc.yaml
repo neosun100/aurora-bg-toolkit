@@ -1,0 +1,88 @@
+# V13-ZGC — Hypothesis: Java 17 ZGC reduces tail latency in 5-client parallel scenarios.
+#
+# Same JDBC/HikariCP/workload as v11 (production-optimal). The ONLY change is
+# at the JVM level — we add -XX:+UseZGC to replace the default G1GC.
+#
+# This is NOT a config-level experiment (config is byte-identical to v11).
+# The change is injected via the V11_EXTRA_JVM environment variable:
+#
+#   V11_EXTRA_JVM='-XX:+UseZGC -XX:+UnlockExperimentalVMOptions' \
+#   V11_CONFIG=v13-zgc \
+#   nohup python3 infra/orchestrate-v11.py &
+#
+# Hypothesis (H1):
+#   ZGC's sub-millisecond pause time should reduce the 5-client parallel
+#   reboot tail. v11's 7.10s RB median was attributed to 5 HikariCP pools
+#   draining/refilling simultaneously, which involves significant heap
+#   allocation churn. G1's stop-the-world pauses (10-100ms) compound across
+#   5 simultaneous client recoveries, producing the 7s downtime.
+#
+# Why ZGC could help:
+#   - ZGC pause times are sub-millisecond regardless of heap size
+#   - 5-client parallel pool refill is GC-heavy (new socket objects, JDBC
+#     metadata, prepared statement caches)
+#   - Eliminating G1 pauses should reduce the contention window
+#
+# Why ZGC could regress (failure modes):
+#   - ZGC has higher memory overhead (~10-20% vs G1)
+#   - At Xmx2g, ZGC's larger metadata footprint may cause more frequent
+#     minor cycles
+#   - ZGC throughput is sometimes 5-10% lower than G1 under sustained load
+#
+# Expected outcome (predicted):
+#   BG: same as v11 (4.20s median) — BG bottleneck is RDS control plane, not GC
+#   FO: same or slightly better — FO bottleneck is detection time, not GC
+#   RB: improvement to 5-6s median — this is where 5-client GC contention bites
+#   RB max: from 7.40s → ~6.0s if hypothesis holds
+#
+# Decision criteria:
+#   ✅ ACCEPT if: RB median improves ≥ 1.0s AND BG/FO unchanged within ±500ms
+#   ❌ REJECT if: any scenario regresses by ≥ 500ms median or ≥ 1.5s max
+#
+name: v13-zgc
+description: v11 baseline + Java 17 ZGC (Z Garbage Collector) at JVM level only
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+# JDBC, HikariCP, workload — all IDENTICAL to v11-final.yaml
+jdbc:
+  wrapperPlugins:
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 50
+  connectTimeout: 1000
+  socketTimeout: 3000
+  failureDetectionTime: 6000
+  failureDetectionInterval: 1000
+  failureDetectionCount: 3
+  wrapperLoggerLevel: INFO
+
+hikari:
+  maximumPoolSize: 50
+  minimumIdle: 50
+  initializationFailTimeout: -1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 64
+  intervalMs: 50
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: true
+    delayMs: 25
+  statsReporterHz: 10

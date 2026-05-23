@@ -1,0 +1,99 @@
+# V14-JVM-TUNED — Maximum JVM-level optimization (builds on v13 ZGC).
+#
+# This is the most aggressive JVM tuning we can apply WITHOUT changing
+# infrastructure (no CDK changes, no kernel sysctl, no driver swap).
+#
+# Stacked optimizations vs v11 baseline:
+#
+#   1. ZGC (inherited from v13)
+#      -XX:+UseZGC + -XX:+UnlockExperimentalVMOptions
+#      Sub-millisecond GC pauses regardless of heap size. Theoretical
+#      benefit on RB tail latency in 5-client parallel scenarios.
+#
+#   2. AlwaysPreTouch (NEW in v14)
+#      -XX:+AlwaysPreTouch
+#      Forces JVM to physically touch every heap page at startup,
+#      eliminating runtime page faults during heap allocation surges
+#      (e.g., 5-client HikariCP pool refill after RDS reboot).
+#      Cost: +1-2s startup time. Benefit: smoother runtime.
+#
+#   3. Fixed heap size (NEW in v14)
+#      -Xms2g -Xmx2g (was just -Xmx2g, Xms defaulted to ~256MB)
+#      With AlwaysPreTouch, this commits all 2GB upfront. No runtime
+#      heap expansion = no expansion-related stalls.
+#
+#   4. StringDeduplication (NEW in v14)
+#      -XX:+UseStringDeduplication
+#      ZGC supports string dedup. JDBC has many duplicate SQL strings
+#      (parameterized queries, prepared statement metadata).
+#      Reduces heap pressure → fewer GC cycles → less contention.
+#
+# Hypothesis (H1): JVM-level tuning can reduce RB tail by 500ms-1s
+#   beyond what v13 ZGC alone provides.
+#
+# Hypothesis (H2): BG and FO are dominated by RDS control plane time
+#   and won't be affected by JVM tuning.
+#
+# Decision criteria:
+#   ✅ ACCEPT if: RB median improves ≥500ms vs v13 AND BG/FO unchanged ±300ms
+#   ⚠️ NEUTRAL if: improvement <500ms (marginal, not worth recommending)
+#   ❌ REJECT if: any scenario regresses ≥500ms median or ≥1.5s max
+#
+# Decision rule: production recommendation only changes from v11 to v14
+# if v14 BEATS v11 by ≥1s on RB AND ties on BG/FO. Otherwise v11 stays.
+#
+# How to run:
+#   V11_CONFIG=v14-jvm-tuned \
+#   V11_EXTRA_JVM='-XX:+UnlockExperimentalVMOptions -XX:+UseZGC -XX:+AlwaysPreTouch -XX:+UseStringDeduplication -Xms2g' \
+#   nohup python3 infra/orchestrate-v11.py &
+#
+# (Note: -Xms2g comes from V11_EXTRA_JVM since orchestrator hardcodes -Xmx2g.
+#  In v14 the -Xms forces fixed heap size matching -Xmx.)
+#
+name: v14-jvm-tuned
+description: v11 baseline + ZGC + AlwaysPreTouch + StringDedup + fixed Xms=Xmx
+
+database:
+  port: 4488
+  database: demo
+  tableTemplate: "table_${CONFIG}_${SUFFIX}"
+  user: admin
+
+# JDBC, HikariCP, workload — all IDENTICAL to v11-final.yaml
+jdbc:
+  wrapperPlugins:
+    - failover2
+    - efm2
+    - bg
+  bgHighMs: 50
+  connectTimeout: 1000
+  socketTimeout: 3000
+  failureDetectionTime: 6000
+  failureDetectionInterval: 1000
+  failureDetectionCount: 3
+  wrapperLoggerLevel: INFO
+
+hikari:
+  maximumPoolSize: 50
+  minimumIdle: 50
+  initializationFailTimeout: -1
+  connectionTimeoutMs: 5000
+  idleTimeoutMs: 30000
+  maxLifetimeMs: 60000
+  keepaliveTimeMs: 60000
+  validationTimeoutMs: 5000
+  connectionInitSql: "select 1 from dual"
+  connectionTestQuery: "SELECT 1"
+  exceptionOverrideClassName: software.amazon.jdbc.util.HikariCPSQLException
+
+workload:
+  threads: 64
+  intervalMs: 50
+  weights:
+    read: 9
+    insert: 2
+    update: 1
+  retry:
+    enabled: true
+    delayMs: 25
+  statsReporterHz: 10
