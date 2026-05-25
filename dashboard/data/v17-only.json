@@ -1,0 +1,566 @@
+{
+  "schema": "v17-matrix-1",
+  "experiment": "v17-reboot-deep-dive",
+  "generatedAt": "2026-05-25T00:18:38Z",
+  "config": {
+    "name": "v17-tps4000",
+    "yamlPath": "configs/v17-tps4000.yaml",
+    "highlights": [
+      "v17 = v16 reboot deep-dive (100 Hz STATS reporter, 10\u00d7 precision)",
+      "v16 RB \u2248 0ms was a measurement blind spot \u2014 v17 reveals the truth",
+      "Real RB by reader instance: t3.medium 190ms / r7g.large 30ms / r7g.2xlarge 10-20ms",
+      "6 runs \u00d7 5 clusters \u00d7 3 scenarios = 90 measurements + 1 smoke run",
+      "Total ~24 hours autonomous on AWS, ~$170 spend",
+      "HSK production correct guidance: RB \u2264 30ms (writer + r7g.2xlarge reader)",
+      "TPS does NOT affect RB (M4 1280 \u2192 T2 2560 \u2192 T3 4000 all 10-30 ms)",
+      "Reader instance class is the determining factor for cluster auto-failover speed",
+      "Single-cluster topology degrades to 6.6s (smoke run reproduced v11-era 7s)",
+      "BG / FO numbers consistent with v16 (within \u00b125%) \u2014 only RB needed correction",
+      "v17 T3 BG 5/5 success (v16 cluster-3/5 failures NOT reproduced)"
+    ]
+  },
+  "scenarios": {
+    "blue-green": {
+      "writeStats": {
+        "n": 5,
+        "min": 3530,
+        "max": 5431,
+        "mean": 4179,
+        "median": 3715,
+        "p50": 3715,
+        "p75": 4530,
+        "p90": 5070,
+        "p95": 5250,
+        "p99": 5394,
+        "q1": 3690,
+        "q3": 4530,
+        "stdev": 716
+      },
+      "readStats": {
+        "n": 5,
+        "min": 3520,
+        "max": 5441,
+        "mean": 4179,
+        "median": 3715,
+        "p50": 3715,
+        "p75": 4530,
+        "p90": 5076,
+        "p95": 5258,
+        "p99": 5404,
+        "q1": 3690,
+        "q3": 4530,
+        "stdev": 721
+      },
+      "samples": [
+        {
+          "cluster": "test-v11-1",
+          "round": 1,
+          "writeMaxMs": 3530,
+          "readMaxMs": 3520,
+          "directory": "e2e-results/v17-T3-r7g8xl-tps4000-blue-green-test-v11-1-r1_20260524_125057"
+        },
+        {
+          "cluster": "test-v11-2",
+          "round": 1,
+          "writeMaxMs": 3690,
+          "readMaxMs": 3690,
+          "directory": "e2e-results/v17-T3-r7g8xl-tps4000-blue-green-test-v11-2-r1_20260524_124956"
+        },
+        {
+          "cluster": "test-v11-3",
+          "round": 1,
+          "writeMaxMs": 5431,
+          "readMaxMs": 5441,
+          "directory": "e2e-results/v17-T3-r7g8xl-tps4000-blue-green-test-v11-3-r1_20260524_124857"
+        },
+        {
+          "cluster": "test-v11-4",
+          "round": 1,
+          "writeMaxMs": 3715,
+          "readMaxMs": 3715,
+          "directory": "e2e-results/v17-T3-r7g8xl-tps4000-blue-green-test-v11-4-r1_20260524_125057"
+        },
+        {
+          "cluster": "test-v11-5",
+          "round": 1,
+          "writeMaxMs": 4530,
+          "readMaxMs": 4530,
+          "directory": "e2e-results/v17-T3-r7g8xl-tps4000-blue-green-test-v11-5-r1_20260524_125057"
+        }
+      ]
+    },
+    "failover": {
+      "writeStats": {
+        "n": 5,
+        "min": 8620,
+        "max": 15990,
+        "mean": 11892,
+        "median": 11590,
+        "p50": 11590,
+        "p75": 12540,
+        "p90": 14610,
+        "p95": 15300,
+        "p99": 15852,
+        "q1": 10720,
+        "q3": 12540,
+        "stdev": 2424
+      },
+      "readStats": {
+        "n": 5,
+        "min": 8610,
+        "max": 15980,
+        "mean": 11886,
+        "median": 11580,
+        "p50": 11580,
+        "p75": 12540,
+        "p90": 14604,
+        "p95": 15292,
+        "p99": 15842,
+        "q1": 10720,
+        "q3": 12540,
+        "stdev": 2423
+      },
+      "samples": [
+        {
+          "cluster": "test-v11-1",
+          "round": 1,
+          "writeMaxMs": 15990,
+          "readMaxMs": 15980,
+          "directory": "e2e-results/v17-T3-r7g8xl-tps4000-failover-test-v11-1-r1_20260524_125407"
+        },
+        {
+          "cluster": "test-v11-2",
+          "round": 1,
+          "writeMaxMs": 12540,
+          "readMaxMs": 12540,
+          "directory": "e2e-results/v17-T3-r7g8xl-tps4000-failover-test-v11-2-r1_20260524_125303"
+        },
+        {
+          "cluster": "test-v11-3",
+          "round": 1,
+          "writeMaxMs": 11590,
+          "readMaxMs": 11580,
+          "directory": "e2e-results/v17-T3-r7g8xl-tps4000-failover-test-v11-3-r1_20260524_125204"
+        },
+        {
+          "cluster": "test-v11-4",
+          "round": 1,
+          "writeMaxMs": 8620,
+          "readMaxMs": 8610,
+          "directory": "e2e-results/v17-T3-r7g8xl-tps4000-failover-test-v11-4-r1_20260524_125406"
+        },
+        {
+          "cluster": "test-v11-5",
+          "round": 1,
+          "writeMaxMs": 10720,
+          "readMaxMs": 10720,
+          "directory": "e2e-results/v17-T3-r7g8xl-tps4000-failover-test-v11-5-r1_20260524_125406"
+        }
+      ]
+    },
+    "reboot": {
+      "writeStats": {
+        "n": 5,
+        "min": 10,
+        "max": 30,
+        "mean": 20,
+        "median": 20,
+        "p50": 20,
+        "p75": 20,
+        "p90": 26,
+        "p95": 28,
+        "p99": 29,
+        "q1": 20,
+        "q3": 20,
+        "stdev": 6
+      },
+      "readStats": {
+        "n": 5,
+        "min": 1,
+        "max": 20,
+        "mean": 12,
+        "median": 10,
+        "p50": 10,
+        "p75": 20,
+        "p90": 20,
+        "p95": 20,
+        "p99": 20,
+        "q1": 10,
+        "q3": 20,
+        "stdev": 7
+      },
+      "samples": [
+        {
+          "cluster": "test-v11-1",
+          "round": 1,
+          "writeMaxMs": 20,
+          "readMaxMs": 10,
+          "directory": "e2e-results/v17-T3-r7g8xl-tps4000-reboot-test-v11-1-r1_20260524_130416"
+        },
+        {
+          "cluster": "test-v11-2",
+          "round": 1,
+          "writeMaxMs": 30,
+          "readMaxMs": 20,
+          "directory": "e2e-results/v17-T3-r7g8xl-tps4000-reboot-test-v11-2-r1_20260524_130313"
+        },
+        {
+          "cluster": "test-v11-3",
+          "round": 1,
+          "writeMaxMs": 10,
+          "readMaxMs": 1,
+          "directory": "e2e-results/v17-T3-r7g8xl-tps4000-reboot-test-v11-3-r1_20260524_130213"
+        },
+        {
+          "cluster": "test-v11-4",
+          "round": 1,
+          "writeMaxMs": 20,
+          "readMaxMs": 20,
+          "directory": "e2e-results/v17-T3-r7g8xl-tps4000-reboot-test-v11-4-r1_20260524_130415"
+        },
+        {
+          "cluster": "test-v11-5",
+          "round": 1,
+          "writeMaxMs": 20,
+          "readMaxMs": 10,
+          "directory": "e2e-results/v17-T3-r7g8xl-tps4000-reboot-test-v11-5-r1_20260524_130415"
+        }
+      ]
+    }
+  },
+  "matrix_summary": {
+    "instance_sweep_at_1280": {
+      "r7g.large": {
+        "BG": {
+          "n": 5,
+          "min": 4080,
+          "max": 5340,
+          "mean": 4556,
+          "median": 4140,
+          "p50": 4140,
+          "p75": 5130,
+          "p90": 5256,
+          "p95": 5298,
+          "p99": 5331,
+          "q1": 4090,
+          "q3": 5130,
+          "stdev": 558
+        },
+        "FO": {
+          "n": 5,
+          "min": 7620,
+          "max": 11280,
+          "mean": 9574,
+          "median": 9560,
+          "p50": 9560,
+          "p75": 9860,
+          "p90": 10712,
+          "p95": 10996,
+          "p99": 11223,
+          "q1": 9550,
+          "q3": 9860,
+          "stdev": 1167
+        },
+        "RB": {
+          "n": 5,
+          "min": 120,
+          "max": 200,
+          "mean": 178,
+          "median": 190,
+          "p50": 190,
+          "p75": 190,
+          "p90": 196,
+          "p95": 198,
+          "p99": 199,
+          "q1": 190,
+          "q3": 190,
+          "stdev": 29
+        }
+      },
+      "r7g.2xlarge": {
+        "BG": {
+          "n": 5,
+          "min": 3560,
+          "max": 4630,
+          "mean": 4050,
+          "median": 3880,
+          "p50": 3880,
+          "p75": 4580,
+          "p90": 4610,
+          "p95": 4620,
+          "p99": 4628,
+          "q1": 3600,
+          "q3": 4580,
+          "stdev": 466
+        },
+        "FO": {
+          "n": 5,
+          "min": 6920,
+          "max": 12000,
+          "mean": 9222,
+          "median": 8720,
+          "p50": 8720,
+          "p75": 11460,
+          "p90": 11784,
+          "p95": 11892,
+          "p99": 11978,
+          "q1": 7010,
+          "q3": 11460,
+          "stdev": 2152
+        },
+        "RB": {
+          "n": 5,
+          "min": 20,
+          "max": 50,
+          "mean": 34,
+          "median": 30,
+          "p50": 30,
+          "p75": 40,
+          "p90": 46,
+          "p95": 48,
+          "p99": 49,
+          "q1": 30,
+          "q3": 40,
+          "stdev": 10
+        }
+      },
+      "r7g.4xlarge": {
+        "BG": {
+          "n": 5,
+          "min": 3540,
+          "max": 4420,
+          "mean": 3968,
+          "median": 3772,
+          "p50": 3772,
+          "p75": 4370,
+          "p90": 4400,
+          "p95": 4410,
+          "p99": 4418,
+          "q1": 3740,
+          "q3": 4370,
+          "stdev": 357
+        },
+        "FO": {
+          "n": 5,
+          "min": 6900,
+          "max": 8940,
+          "mean": 8306,
+          "median": 8480,
+          "p50": 8480,
+          "p75": 8840,
+          "p90": 8900,
+          "p95": 8920,
+          "p99": 8936,
+          "q1": 8370,
+          "q3": 8840,
+          "stdev": 734
+        },
+        "RB": {
+          "n": 5,
+          "min": 30,
+          "max": 40,
+          "mean": 34,
+          "median": 30,
+          "p50": 30,
+          "p75": 40,
+          "p90": 40,
+          "p95": 40,
+          "p99": 40,
+          "q1": 30,
+          "q3": 40,
+          "stdev": 4
+        }
+      },
+      "r7g.8xlarge": {
+        "BG": {
+          "n": 5,
+          "min": 3270,
+          "max": 4261,
+          "mean": 3692,
+          "median": 3370,
+          "p50": 3370,
+          "p75": 4230,
+          "p90": 4248,
+          "p95": 4254,
+          "p99": 4259,
+          "q1": 3330,
+          "q3": 4230,
+          "stdev": 452
+        },
+        "FO": {
+          "n": 5,
+          "min": 7990,
+          "max": 15240,
+          "mean": 10066,
+          "median": 8140,
+          "p50": 8140,
+          "p75": 10880,
+          "p90": 13496,
+          "p95": 14368,
+          "p99": 15065,
+          "q1": 8080,
+          "q3": 10880,
+          "stdev": 2807
+        },
+        "RB": {
+          "n": 5,
+          "min": 20,
+          "max": 24,
+          "mean": 20,
+          "median": 20,
+          "p50": 20,
+          "p75": 20,
+          "p90": 22,
+          "p95": 23,
+          "p99": 23,
+          "q1": 20,
+          "q3": 20,
+          "stdev": 1
+        }
+      }
+    },
+    "tps_sweep_at_8X": {
+      "1280": {
+        "BG": {
+          "n": 5,
+          "min": 3270,
+          "max": 4261,
+          "mean": 3692,
+          "median": 3370,
+          "p50": 3370,
+          "p75": 4230,
+          "p90": 4248,
+          "p95": 4254,
+          "p99": 4259,
+          "q1": 3330,
+          "q3": 4230,
+          "stdev": 452
+        },
+        "FO": {
+          "n": 5,
+          "min": 7990,
+          "max": 15240,
+          "mean": 10066,
+          "median": 8140,
+          "p50": 8140,
+          "p75": 10880,
+          "p90": 13496,
+          "p95": 14368,
+          "p99": 15065,
+          "q1": 8080,
+          "q3": 10880,
+          "stdev": 2807
+        },
+        "RB": {
+          "n": 5,
+          "min": 20,
+          "max": 24,
+          "mean": 20,
+          "median": 20,
+          "p50": 20,
+          "p75": 20,
+          "p90": 22,
+          "p95": 23,
+          "p99": 23,
+          "q1": 20,
+          "q3": 20,
+          "stdev": 1
+        }
+      },
+      "2560": {
+        "BG": {
+          "n": 5,
+          "min": 3403,
+          "max": 4655,
+          "mean": 3983,
+          "median": 3821,
+          "p50": 3821,
+          "p75": 4490,
+          "p90": 4589,
+          "p95": 4622,
+          "p99": 4648,
+          "q1": 3550,
+          "q3": 4490,
+          "stdev": 501
+        },
+        "FO": {
+          "n": 5,
+          "min": 8240,
+          "max": 16100,
+          "mean": 11004,
+          "median": 11040,
+          "p50": 11040,
+          "p75": 11250,
+          "p90": 14160,
+          "p95": 15130,
+          "p99": 15906,
+          "q1": 8390,
+          "q3": 11250,
+          "stdev": 2846
+        },
+        "RB": {
+          "n": 5,
+          "min": 10,
+          "max": 10,
+          "mean": 10,
+          "median": 10,
+          "p50": 10,
+          "p75": 10,
+          "p90": 10,
+          "p95": 10,
+          "p99": 10,
+          "q1": 10,
+          "q3": 10,
+          "stdev": 0
+        }
+      },
+      "4000": {
+        "BG": {
+          "n": 5,
+          "min": 3530,
+          "max": 5431,
+          "mean": 4179,
+          "median": 3715,
+          "p50": 3715,
+          "p75": 4530,
+          "p90": 5070,
+          "p95": 5250,
+          "p99": 5394,
+          "q1": 3690,
+          "q3": 4530,
+          "stdev": 716
+        },
+        "FO": {
+          "n": 5,
+          "min": 8620,
+          "max": 15990,
+          "mean": 11892,
+          "median": 11590,
+          "p50": 11590,
+          "p75": 12540,
+          "p90": 14610,
+          "p95": 15300,
+          "p99": 15852,
+          "q1": 10720,
+          "q3": 12540,
+          "stdev": 2424
+        },
+        "RB": {
+          "n": 5,
+          "min": 10,
+          "max": 30,
+          "mean": 20,
+          "median": 20,
+          "p50": 20,
+          "p75": 20,
+          "p90": 26,
+          "p95": 28,
+          "p99": 29,
+          "q1": 20,
+          "q3": 20,
+          "stdev": 6
+        }
+      }
+    }
+  }
+}

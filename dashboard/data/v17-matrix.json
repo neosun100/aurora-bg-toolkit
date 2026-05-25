@@ -1,0 +1,2408 @@
+{
+  "schema": "v17-matrix-1",
+  "experiment": "v17-reboot-deepdive-revalidation",
+  "generatedAt": "2026-05-24T16:38:08Z",
+  "runs": {
+    "v17-M1-r7glarge-tps1280": {
+      "label": "v17-M1-r7glarge-tps1280",
+      "metadata": {
+        "writer_instance": "r7g.large",
+        "reader_instance": "t3.medium",
+        "client_instance": "c6i.2xlarge",
+        "tps_config": "v17-tps1280",
+        "tps": "1280"
+      },
+      "scenarios": {
+        "blue-green": {
+          "scenario": "blue-green",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 4140,
+              "readMaxMs": 4140,
+              "runId": "test-v11-1_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M1-r7glarge-tps1280-blue-green-test-v11-1-r1_20260523_222619",
+              "writerInstance": "r7g.large",
+              "readerInstance": "t3.medium",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 4090,
+              "readMaxMs": 4080,
+              "runId": "test-v11-2_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M1-r7glarge-tps1280-blue-green-test-v11-2-r1_20260523_222518",
+              "writerInstance": "r7g.large",
+              "readerInstance": "t3.medium",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 5130,
+              "readMaxMs": 5090,
+              "runId": "test-v11-3_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M1-r7glarge-tps1280-blue-green-test-v11-3-r1_20260523_222418",
+              "writerInstance": "r7g.large",
+              "readerInstance": "t3.medium",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 4080,
+              "readMaxMs": 4090,
+              "runId": "test-v11-4_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M1-r7glarge-tps1280-blue-green-test-v11-4-r1_20260523_222449",
+              "writerInstance": "r7g.large",
+              "readerInstance": "t3.medium",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 5340,
+              "readMaxMs": 5320,
+              "runId": "test-v11-5_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M1-r7glarge-tps1280-blue-green-test-v11-5-r1_20260523_222518",
+              "writerInstance": "r7g.large",
+              "readerInstance": "t3.medium",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            }
+          ],
+          "samples": [
+            4140,
+            4090,
+            5130,
+            4080,
+            5340
+          ],
+          "readSamples": [
+            4140,
+            4080,
+            5090,
+            4090,
+            5320
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 4080,
+            "max": 5340,
+            "mean": 4556,
+            "median": 4140,
+            "p50": 4140,
+            "p75": 5130,
+            "p90": 5256,
+            "p95": 5298,
+            "p99": 5331,
+            "q1": 4090,
+            "q3": 5130,
+            "stdev": 558
+          },
+          "readStats": {
+            "n": 5,
+            "min": 4080,
+            "max": 5320,
+            "mean": 4544,
+            "median": 4140,
+            "p50": 4140,
+            "p75": 5090,
+            "p90": 5228,
+            "p95": 5274,
+            "p99": 5310,
+            "q1": 4090,
+            "q3": 5090,
+            "stdev": 544
+          }
+        },
+        "failover": {
+          "scenario": "failover",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 11280,
+              "readMaxMs": 11250,
+              "runId": "test-v11-1_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M1-r7glarge-tps1280-failover-test-v11-1-r1_20260523_222926",
+              "writerInstance": "r7g.large",
+              "readerInstance": "t3.medium",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 9550,
+              "readMaxMs": 9531,
+              "runId": "test-v11-2_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M1-r7glarge-tps1280-failover-test-v11-2-r1_20260523_222826",
+              "writerInstance": "r7g.large",
+              "readerInstance": "t3.medium",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 9860,
+              "readMaxMs": 9830,
+              "runId": "test-v11-3_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M1-r7glarge-tps1280-failover-test-v11-3-r1_20260523_222725",
+              "writerInstance": "r7g.large",
+              "readerInstance": "t3.medium",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 7620,
+              "readMaxMs": 7600,
+              "runId": "test-v11-4_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M1-r7glarge-tps1280-failover-test-v11-4-r1_20260523_222755",
+              "writerInstance": "r7g.large",
+              "readerInstance": "t3.medium",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 9560,
+              "readMaxMs": 9530,
+              "runId": "test-v11-5_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M1-r7glarge-tps1280-failover-test-v11-5-r1_20260523_222826",
+              "writerInstance": "r7g.large",
+              "readerInstance": "t3.medium",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            }
+          ],
+          "samples": [
+            11280,
+            9550,
+            9860,
+            7620,
+            9560
+          ],
+          "readSamples": [
+            11250,
+            9531,
+            9830,
+            7600,
+            9530
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 7620,
+            "max": 11280,
+            "mean": 9574,
+            "median": 9560,
+            "p50": 9560,
+            "p75": 9860,
+            "p90": 10712,
+            "p95": 10996,
+            "p99": 11223,
+            "q1": 9550,
+            "q3": 9860,
+            "stdev": 1167
+          },
+          "readStats": {
+            "n": 5,
+            "min": 7600,
+            "max": 11250,
+            "mean": 9548,
+            "median": 9531,
+            "p50": 9531,
+            "p75": 9830,
+            "p90": 10682,
+            "p95": 10966,
+            "p99": 11193,
+            "q1": 9530,
+            "q3": 9830,
+            "stdev": 1163
+          }
+        },
+        "reboot": {
+          "scenario": "reboot",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 120,
+              "readMaxMs": 60,
+              "runId": "test-v11-1_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M1-r7glarge-tps1280-reboot-test-v11-1-r1_20260523_223204",
+              "writerInstance": "r7g.large",
+              "readerInstance": "t3.medium",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 200,
+              "readMaxMs": 90,
+              "runId": "test-v11-2_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M1-r7glarge-tps1280-reboot-test-v11-2-r1_20260523_223105",
+              "writerInstance": "r7g.large",
+              "readerInstance": "t3.medium",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 190,
+              "readMaxMs": 30,
+              "runId": "test-v11-3_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M1-r7glarge-tps1280-reboot-test-v11-3-r1_20260523_223004",
+              "writerInstance": "r7g.large",
+              "readerInstance": "t3.medium",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 190,
+              "readMaxMs": 140,
+              "runId": "test-v11-4_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M1-r7glarge-tps1280-reboot-test-v11-4-r1_20260523_223034",
+              "writerInstance": "r7g.large",
+              "readerInstance": "t3.medium",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 190,
+              "readMaxMs": 70,
+              "runId": "test-v11-5_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M1-r7glarge-tps1280-reboot-test-v11-5-r1_20260523_223105",
+              "writerInstance": "r7g.large",
+              "readerInstance": "t3.medium",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            }
+          ],
+          "samples": [
+            120,
+            200,
+            190,
+            190,
+            190
+          ],
+          "readSamples": [
+            60,
+            90,
+            30,
+            140,
+            70
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 120,
+            "max": 200,
+            "mean": 178,
+            "median": 190,
+            "p50": 190,
+            "p75": 190,
+            "p90": 196,
+            "p95": 198,
+            "p99": 199,
+            "q1": 190,
+            "q3": 190,
+            "stdev": 29
+          },
+          "readStats": {
+            "n": 5,
+            "min": 30,
+            "max": 140,
+            "mean": 78,
+            "median": 70,
+            "p50": 70,
+            "p75": 90,
+            "p90": 120,
+            "p95": 130,
+            "p99": 138,
+            "q1": 60,
+            "q3": 90,
+            "stdev": 36
+          }
+        }
+      },
+      "total_measurements": 15
+    },
+    "v17-M2-r7g2xl-tps1280": {
+      "label": "v17-M2-r7g2xl-tps1280",
+      "metadata": {
+        "writer_instance": "r7g.2xlarge",
+        "reader_instance": "r7g.large",
+        "client_instance": "c6i.2xlarge",
+        "tps_config": "v17-tps1280",
+        "tps": "1280"
+      },
+      "scenarios": {
+        "blue-green": {
+          "scenario": "blue-green",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 3880,
+              "readMaxMs": 3870,
+              "runId": "test-v11-1_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M2-r7g2xl-tps1280-blue-green-test-v11-1-r1_20260523_184158",
+              "writerInstance": "r7g.2xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 3560,
+              "readMaxMs": 3560,
+              "runId": "test-v11-2_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M2-r7g2xl-tps1280-blue-green-test-v11-2-r1_20260523_184159",
+              "writerInstance": "r7g.2xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 4580,
+              "readMaxMs": 4570,
+              "runId": "test-v11-3_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M2-r7g2xl-tps1280-blue-green-test-v11-3-r1_20260523_184158",
+              "writerInstance": "r7g.2xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 3600,
+              "readMaxMs": 3600,
+              "runId": "test-v11-4_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M2-r7g2xl-tps1280-blue-green-test-v11-4-r1_20260523_184158",
+              "writerInstance": "r7g.2xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 4630,
+              "readMaxMs": 4620,
+              "runId": "test-v11-5_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M2-r7g2xl-tps1280-blue-green-test-v11-5-r1_20260523_184429",
+              "writerInstance": "r7g.2xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            }
+          ],
+          "samples": [
+            3880,
+            3560,
+            4580,
+            3600,
+            4630
+          ],
+          "readSamples": [
+            3870,
+            3560,
+            4570,
+            3600,
+            4620
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 3560,
+            "max": 4630,
+            "mean": 4050,
+            "median": 3880,
+            "p50": 3880,
+            "p75": 4580,
+            "p90": 4610,
+            "p95": 4620,
+            "p99": 4628,
+            "q1": 3600,
+            "q3": 4580,
+            "stdev": 466
+          },
+          "readStats": {
+            "n": 5,
+            "min": 3560,
+            "max": 4620,
+            "mean": 4044,
+            "median": 3870,
+            "p50": 3870,
+            "p75": 4570,
+            "p90": 4600,
+            "p95": 4610,
+            "p99": 4618,
+            "q1": 3600,
+            "q3": 4570,
+            "stdev": 462
+          }
+        },
+        "failover": {
+          "scenario": "failover",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 8720,
+              "readMaxMs": 8700,
+              "runId": "test-v11-1_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M2-r7g2xl-tps1280-failover-test-v11-1-r1_20260523_184507",
+              "writerInstance": "r7g.2xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 12000,
+              "readMaxMs": 12000,
+              "runId": "test-v11-2_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M2-r7g2xl-tps1280-failover-test-v11-2-r1_20260523_184508",
+              "writerInstance": "r7g.2xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 7010,
+              "readMaxMs": 6990,
+              "runId": "test-v11-3_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M2-r7g2xl-tps1280-failover-test-v11-3-r1_20260523_184507",
+              "writerInstance": "r7g.2xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 6920,
+              "readMaxMs": 6900,
+              "runId": "test-v11-4_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M2-r7g2xl-tps1280-failover-test-v11-4-r1_20260523_184508",
+              "writerInstance": "r7g.2xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 11460,
+              "readMaxMs": 11450,
+              "runId": "test-v11-5_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M2-r7g2xl-tps1280-failover-test-v11-5-r1_20260523_184737",
+              "writerInstance": "r7g.2xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            }
+          ],
+          "samples": [
+            8720,
+            12000,
+            7010,
+            6920,
+            11460
+          ],
+          "readSamples": [
+            8700,
+            12000,
+            6990,
+            6900,
+            11450
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 6920,
+            "max": 12000,
+            "mean": 9222,
+            "median": 8720,
+            "p50": 8720,
+            "p75": 11460,
+            "p90": 11784,
+            "p95": 11892,
+            "p99": 11978,
+            "q1": 7010,
+            "q3": 11460,
+            "stdev": 2152
+          },
+          "readStats": {
+            "n": 5,
+            "min": 6900,
+            "max": 12000,
+            "mean": 9208,
+            "median": 8700,
+            "p50": 8700,
+            "p75": 11450,
+            "p90": 11780,
+            "p95": 11890,
+            "p99": 11978,
+            "q1": 6990,
+            "q3": 11450,
+            "stdev": 2159
+          }
+        },
+        "reboot": {
+          "scenario": "reboot",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 40,
+              "readMaxMs": 0,
+              "runId": "test-v11-1_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M2-r7g2xl-tps1280-reboot-test-v11-1-r1_20260523_184746",
+              "writerInstance": "r7g.2xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 30,
+              "readMaxMs": 0,
+              "runId": "test-v11-2_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M2-r7g2xl-tps1280-reboot-test-v11-2-r1_20260523_184747",
+              "writerInstance": "r7g.2xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 20,
+              "readMaxMs": 10,
+              "runId": "test-v11-3_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M2-r7g2xl-tps1280-reboot-test-v11-3-r1_20260523_184746",
+              "writerInstance": "r7g.2xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 50,
+              "readMaxMs": 0,
+              "runId": "test-v11-4_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M2-r7g2xl-tps1280-reboot-test-v11-4-r1_20260523_184747",
+              "writerInstance": "r7g.2xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 30,
+              "readMaxMs": 0,
+              "runId": "test-v11-5_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M2-r7g2xl-tps1280-reboot-test-v11-5-r1_20260523_185015",
+              "writerInstance": "r7g.2xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.2xlarge",
+              "tps": "1280"
+            }
+          ],
+          "samples": [
+            40,
+            30,
+            20,
+            50,
+            30
+          ],
+          "readSamples": [
+            0,
+            0,
+            10,
+            0,
+            0
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 20,
+            "max": 50,
+            "mean": 34,
+            "median": 30,
+            "p50": 30,
+            "p75": 40,
+            "p90": 46,
+            "p95": 48,
+            "p99": 49,
+            "q1": 30,
+            "q3": 40,
+            "stdev": 10
+          },
+          "readStats": {
+            "n": 5,
+            "min": 0,
+            "max": 10,
+            "mean": 2,
+            "median": 0,
+            "p50": 0,
+            "p75": 0,
+            "p90": 6,
+            "p95": 7,
+            "p99": 9,
+            "q1": 0,
+            "q3": 0,
+            "stdev": 4
+          }
+        }
+      },
+      "total_measurements": 15
+    },
+    "v17-M3-r7g4xl-tps1280": {
+      "label": "v17-M3-r7g4xl-tps1280",
+      "metadata": {
+        "writer_instance": "r7g.4xlarge",
+        "reader_instance": "r7g.large",
+        "client_instance": "c6i.4xlarge",
+        "tps_config": "v17-tps1280",
+        "tps": "1280"
+      },
+      "scenarios": {
+        "blue-green": {
+          "scenario": "blue-green",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 3540,
+              "readMaxMs": 3530,
+              "runId": "test-v11-1_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M3-r7g4xl-tps1280-blue-green-test-v11-1-r1_20260524_060332",
+              "writerInstance": "r7g.4xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 3772,
+              "readMaxMs": 3772,
+              "runId": "test-v11-2_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M3-r7g4xl-tps1280-blue-green-test-v11-2-r1_20260524_060432",
+              "writerInstance": "r7g.4xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 4370,
+              "readMaxMs": 4360,
+              "runId": "test-v11-3_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M3-r7g4xl-tps1280-blue-green-test-v11-3-r1_20260524_060331",
+              "writerInstance": "r7g.4xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 3740,
+              "readMaxMs": 3704,
+              "runId": "test-v11-4_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M3-r7g4xl-tps1280-blue-green-test-v11-4-r1_20260524_060331",
+              "writerInstance": "r7g.4xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 4420,
+              "readMaxMs": 4410,
+              "runId": "test-v11-5_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M3-r7g4xl-tps1280-blue-green-test-v11-5-r1_20260524_060331",
+              "writerInstance": "r7g.4xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            }
+          ],
+          "samples": [
+            3540,
+            3772,
+            4370,
+            3740,
+            4420
+          ],
+          "readSamples": [
+            3530,
+            3772,
+            4360,
+            3704,
+            4410
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 3540,
+            "max": 4420,
+            "mean": 3968,
+            "median": 3772,
+            "p50": 3772,
+            "p75": 4370,
+            "p90": 4400,
+            "p95": 4410,
+            "p99": 4418,
+            "q1": 3740,
+            "q3": 4370,
+            "stdev": 357
+          },
+          "readStats": {
+            "n": 5,
+            "min": 3530,
+            "max": 4410,
+            "mean": 3955,
+            "median": 3772,
+            "p50": 3772,
+            "p75": 4360,
+            "p90": 4390,
+            "p95": 4400,
+            "p99": 4408,
+            "q1": 3704,
+            "q3": 4360,
+            "stdev": 360
+          }
+        },
+        "failover": {
+          "scenario": "failover",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 8840,
+              "readMaxMs": 8830,
+              "runId": "test-v11-1_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M3-r7g4xl-tps1280-failover-test-v11-1-r1_20260524_060641",
+              "writerInstance": "r7g.4xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 8940,
+              "readMaxMs": 8940,
+              "runId": "test-v11-2_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M3-r7g4xl-tps1280-failover-test-v11-2-r1_20260524_060739",
+              "writerInstance": "r7g.4xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 8480,
+              "readMaxMs": 8470,
+              "runId": "test-v11-3_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M3-r7g4xl-tps1280-failover-test-v11-3-r1_20260524_060640",
+              "writerInstance": "r7g.4xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 8370,
+              "readMaxMs": 8340,
+              "runId": "test-v11-4_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M3-r7g4xl-tps1280-failover-test-v11-4-r1_20260524_060640",
+              "writerInstance": "r7g.4xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 6900,
+              "readMaxMs": 6880,
+              "runId": "test-v11-5_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M3-r7g4xl-tps1280-failover-test-v11-5-r1_20260524_060640",
+              "writerInstance": "r7g.4xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            }
+          ],
+          "samples": [
+            8840,
+            8940,
+            8480,
+            8370,
+            6900
+          ],
+          "readSamples": [
+            8830,
+            8940,
+            8470,
+            8340,
+            6880
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 6900,
+            "max": 8940,
+            "mean": 8306,
+            "median": 8480,
+            "p50": 8480,
+            "p75": 8840,
+            "p90": 8900,
+            "p95": 8920,
+            "p99": 8936,
+            "q1": 8370,
+            "q3": 8840,
+            "stdev": 734
+          },
+          "readStats": {
+            "n": 5,
+            "min": 6880,
+            "max": 8940,
+            "mean": 8292,
+            "median": 8470,
+            "p50": 8470,
+            "p75": 8830,
+            "p90": 8896,
+            "p95": 8918,
+            "p99": 8935,
+            "q1": 8340,
+            "q3": 8830,
+            "stdev": 739
+          }
+        },
+        "reboot": {
+          "scenario": "reboot",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 40,
+              "readMaxMs": 0,
+              "runId": "test-v11-1_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M3-r7g4xl-tps1280-reboot-test-v11-1-r1_20260524_060920",
+              "writerInstance": "r7g.4xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 40,
+              "readMaxMs": 10,
+              "runId": "test-v11-2_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M3-r7g4xl-tps1280-reboot-test-v11-2-r1_20260524_061018",
+              "writerInstance": "r7g.4xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 30,
+              "readMaxMs": 0,
+              "runId": "test-v11-3_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M3-r7g4xl-tps1280-reboot-test-v11-3-r1_20260524_060920",
+              "writerInstance": "r7g.4xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 30,
+              "readMaxMs": 0,
+              "runId": "test-v11-4_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M3-r7g4xl-tps1280-reboot-test-v11-4-r1_20260524_060919",
+              "writerInstance": "r7g.4xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 30,
+              "readMaxMs": 0,
+              "runId": "test-v11-5_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M3-r7g4xl-tps1280-reboot-test-v11-5-r1_20260524_060919",
+              "writerInstance": "r7g.4xlarge",
+              "readerInstance": "r7g.large",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            }
+          ],
+          "samples": [
+            40,
+            40,
+            30,
+            30,
+            30
+          ],
+          "readSamples": [
+            0,
+            10,
+            0,
+            0,
+            0
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 30,
+            "max": 40,
+            "mean": 34,
+            "median": 30,
+            "p50": 30,
+            "p75": 40,
+            "p90": 40,
+            "p95": 40,
+            "p99": 40,
+            "q1": 30,
+            "q3": 40,
+            "stdev": 4
+          },
+          "readStats": {
+            "n": 5,
+            "min": 0,
+            "max": 10,
+            "mean": 2,
+            "median": 0,
+            "p50": 0,
+            "p75": 0,
+            "p90": 6,
+            "p95": 7,
+            "p99": 9,
+            "q1": 0,
+            "q3": 0,
+            "stdev": 4
+          }
+        }
+      },
+      "total_measurements": 15
+    },
+    "v17-M4-r7g8xl-tps1280": {
+      "label": "v17-M4-r7g8xl-tps1280",
+      "metadata": {
+        "writer_instance": "r7g.8xlarge",
+        "reader_instance": "r7g.2xlarge",
+        "client_instance": "c6i.4xlarge",
+        "tps_config": "v17-tps1280",
+        "tps": "1280"
+      },
+      "scenarios": {
+        "blue-green": {
+          "scenario": "blue-green",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 3370,
+              "readMaxMs": 3380,
+              "runId": "test-v11-1_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M4-r7g8xl-tps1280-blue-green-test-v11-1-r1_20260524_102334",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 3270,
+              "readMaxMs": 3260,
+              "runId": "test-v11-2_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M4-r7g8xl-tps1280-blue-green-test-v11-2-r1_20260524_102304",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 4230,
+              "readMaxMs": 4230,
+              "runId": "test-v11-3_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M4-r7g8xl-tps1280-blue-green-test-v11-3-r1_20260524_102434",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 3330,
+              "readMaxMs": 3330,
+              "runId": "test-v11-4_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M4-r7g8xl-tps1280-blue-green-test-v11-4-r1_20260524_102536",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 4261,
+              "readMaxMs": 4261,
+              "runId": "test-v11-5_v17-tps1280_v11bg_r1",
+              "directory": "e2e-results/v17-M4-r7g8xl-tps1280-blue-green-test-v11-5-r1_20260524_102535",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            }
+          ],
+          "samples": [
+            3370,
+            3270,
+            4230,
+            3330,
+            4261
+          ],
+          "readSamples": [
+            3380,
+            3260,
+            4230,
+            3330,
+            4261
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 3270,
+            "max": 4261,
+            "mean": 3692,
+            "median": 3370,
+            "p50": 3370,
+            "p75": 4230,
+            "p90": 4248,
+            "p95": 4254,
+            "p99": 4259,
+            "q1": 3330,
+            "q3": 4230,
+            "stdev": 452
+          },
+          "readStats": {
+            "n": 5,
+            "min": 3260,
+            "max": 4261,
+            "mean": 3692,
+            "median": 3380,
+            "p50": 3380,
+            "p75": 4230,
+            "p90": 4248,
+            "p95": 4254,
+            "p99": 4259,
+            "q1": 3330,
+            "q3": 4230,
+            "stdev": 453
+          }
+        },
+        "failover": {
+          "scenario": "failover",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 8080,
+              "readMaxMs": 8070,
+              "runId": "test-v11-1_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M4-r7g8xl-tps1280-failover-test-v11-1-r1_20260524_102641",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 10880,
+              "readMaxMs": 10860,
+              "runId": "test-v11-2_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M4-r7g8xl-tps1280-failover-test-v11-2-r1_20260524_102612",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 7990,
+              "readMaxMs": 7980,
+              "runId": "test-v11-3_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M4-r7g8xl-tps1280-failover-test-v11-3-r1_20260524_102741",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 15240,
+              "readMaxMs": 15240,
+              "runId": "test-v11-4_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M4-r7g8xl-tps1280-failover-test-v11-4-r1_20260524_102843",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 8140,
+              "readMaxMs": 8109,
+              "runId": "test-v11-5_v17-tps1280_v11fo_r1",
+              "directory": "e2e-results/v17-M4-r7g8xl-tps1280-failover-test-v11-5-r1_20260524_102843",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            }
+          ],
+          "samples": [
+            8080,
+            10880,
+            7990,
+            15240,
+            8140
+          ],
+          "readSamples": [
+            8070,
+            10860,
+            7980,
+            15240,
+            8109
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 7990,
+            "max": 15240,
+            "mean": 10066,
+            "median": 8140,
+            "p50": 8140,
+            "p75": 10880,
+            "p90": 13496,
+            "p95": 14368,
+            "p99": 15065,
+            "q1": 8080,
+            "q3": 10880,
+            "stdev": 2807
+          },
+          "readStats": {
+            "n": 5,
+            "min": 7980,
+            "max": 15240,
+            "mean": 10051,
+            "median": 8109,
+            "p50": 8109,
+            "p75": 10860,
+            "p90": 13488,
+            "p95": 14364,
+            "p99": 15064,
+            "q1": 8070,
+            "q3": 10860,
+            "stdev": 2813
+          }
+        },
+        "reboot": {
+          "scenario": "reboot",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 20,
+              "readMaxMs": 10,
+              "runId": "test-v11-1_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M4-r7g8xl-tps1280-reboot-test-v11-1-r1_20260524_103650",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 20,
+              "readMaxMs": 0,
+              "runId": "test-v11-2_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M4-r7g8xl-tps1280-reboot-test-v11-2-r1_20260524_103621",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 24,
+              "readMaxMs": 10,
+              "runId": "test-v11-3_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M4-r7g8xl-tps1280-reboot-test-v11-3-r1_20260524_103750",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 20,
+              "readMaxMs": 0,
+              "runId": "test-v11-4_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M4-r7g8xl-tps1280-reboot-test-v11-4-r1_20260524_103852",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 20,
+              "readMaxMs": 20,
+              "runId": "test-v11-5_v17-tps1280_v11rb_r1",
+              "directory": "e2e-results/v17-M4-r7g8xl-tps1280-reboot-test-v11-5-r1_20260524_103851",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.4xlarge",
+              "tps": "1280"
+            }
+          ],
+          "samples": [
+            20,
+            20,
+            24,
+            20,
+            20
+          ],
+          "readSamples": [
+            10,
+            0,
+            10,
+            0,
+            20
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 20,
+            "max": 24,
+            "mean": 20,
+            "median": 20,
+            "p50": 20,
+            "p75": 20,
+            "p90": 22,
+            "p95": 23,
+            "p99": 23,
+            "q1": 20,
+            "q3": 20,
+            "stdev": 1
+          },
+          "readStats": {
+            "n": 5,
+            "min": 0,
+            "max": 20,
+            "mean": 8,
+            "median": 10,
+            "p50": 10,
+            "p75": 10,
+            "p90": 16,
+            "p95": 18,
+            "p99": 19,
+            "q1": 0,
+            "q3": 10,
+            "stdev": 7
+          }
+        }
+      },
+      "total_measurements": 15
+    },
+    "v17-T2-r7g8xl-tps2560": {
+      "label": "v17-T2-r7g8xl-tps2560",
+      "metadata": {
+        "writer_instance": "r7g.8xlarge",
+        "reader_instance": "r7g.2xlarge",
+        "client_instance": "c6i.8xlarge",
+        "tps_config": "v17-tps2560",
+        "tps": "2560"
+      },
+      "scenarios": {
+        "blue-green": {
+          "scenario": "blue-green",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 3550,
+              "readMaxMs": 3500,
+              "runId": "test-v11-1_v17-tps2560_v11bg_r1",
+              "directory": "e2e-results/v17-T2-r7g8xl-tps2560-blue-green-test-v11-1-r1_20260524_113442",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "2560"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 3403,
+              "readMaxMs": 3370,
+              "runId": "test-v11-2_v17-tps2560_v11bg_r1",
+              "directory": "e2e-results/v17-T2-r7g8xl-tps2560-blue-green-test-v11-2-r1_20260524_113412",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "2560"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 4490,
+              "readMaxMs": 4500,
+              "runId": "test-v11-3_v17-tps2560_v11bg_r1",
+              "directory": "e2e-results/v17-T2-r7g8xl-tps2560-blue-green-test-v11-3-r1_20260524_113543",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "2560"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 3821,
+              "readMaxMs": 3811,
+              "runId": "test-v11-4_v17-tps2560_v11bg_r1",
+              "directory": "e2e-results/v17-T2-r7g8xl-tps2560-blue-green-test-v11-4-r1_20260524_113512",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "2560"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 4655,
+              "readMaxMs": 4655,
+              "runId": "test-v11-5_v17-tps2560_v11bg_r1",
+              "directory": "e2e-results/v17-T2-r7g8xl-tps2560-blue-green-test-v11-5-r1_20260524_113442",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "2560"
+            }
+          ],
+          "samples": [
+            3550,
+            3403,
+            4490,
+            3821,
+            4655
+          ],
+          "readSamples": [
+            3500,
+            3370,
+            4500,
+            3811,
+            4655
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 3403,
+            "max": 4655,
+            "mean": 3983,
+            "median": 3821,
+            "p50": 3821,
+            "p75": 4490,
+            "p90": 4589,
+            "p95": 4622,
+            "p99": 4648,
+            "q1": 3550,
+            "q3": 4490,
+            "stdev": 501
+          },
+          "readStats": {
+            "n": 5,
+            "min": 3370,
+            "max": 4655,
+            "mean": 3967,
+            "median": 3811,
+            "p50": 3811,
+            "p75": 4500,
+            "p90": 4593,
+            "p95": 4624,
+            "p99": 4648,
+            "q1": 3500,
+            "q3": 4500,
+            "stdev": 520
+          }
+        },
+        "failover": {
+          "scenario": "failover",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 8240,
+              "readMaxMs": 8230,
+              "runId": "test-v11-1_v17-tps2560_v11fo_r1",
+              "directory": "e2e-results/v17-T2-r7g8xl-tps2560-failover-test-v11-1-r1_20260524_113750",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "2560"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 16100,
+              "readMaxMs": 16100,
+              "runId": "test-v11-2_v17-tps2560_v11fo_r1",
+              "directory": "e2e-results/v17-T2-r7g8xl-tps2560-failover-test-v11-2-r1_20260524_113719",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "2560"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 8390,
+              "readMaxMs": 8390,
+              "runId": "test-v11-3_v17-tps2560_v11fo_r1",
+              "directory": "e2e-results/v17-T2-r7g8xl-tps2560-failover-test-v11-3-r1_20260524_113850",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "2560"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 11250,
+              "readMaxMs": 11240,
+              "runId": "test-v11-4_v17-tps2560_v11fo_r1",
+              "directory": "e2e-results/v17-T2-r7g8xl-tps2560-failover-test-v11-4-r1_20260524_113819",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "2560"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 11040,
+              "readMaxMs": 11040,
+              "runId": "test-v11-5_v17-tps2560_v11fo_r1",
+              "directory": "e2e-results/v17-T2-r7g8xl-tps2560-failover-test-v11-5-r1_20260524_113750",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "2560"
+            }
+          ],
+          "samples": [
+            8240,
+            16100,
+            8390,
+            11250,
+            11040
+          ],
+          "readSamples": [
+            8230,
+            16100,
+            8390,
+            11240,
+            11040
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 8240,
+            "max": 16100,
+            "mean": 11004,
+            "median": 11040,
+            "p50": 11040,
+            "p75": 11250,
+            "p90": 14160,
+            "p95": 15130,
+            "p99": 15906,
+            "q1": 8390,
+            "q3": 11250,
+            "stdev": 2846
+          },
+          "readStats": {
+            "n": 5,
+            "min": 8230,
+            "max": 16100,
+            "mean": 11000,
+            "median": 11040,
+            "p50": 11040,
+            "p75": 11240,
+            "p90": 14156,
+            "p95": 15128,
+            "p99": 15905,
+            "q1": 8390,
+            "q3": 11240,
+            "stdev": 2847
+          }
+        },
+        "reboot": {
+          "scenario": "reboot",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 10,
+              "readMaxMs": 10,
+              "runId": "test-v11-1_v17-tps2560_v11rb_r1",
+              "directory": "e2e-results/v17-T2-r7g8xl-tps2560-reboot-test-v11-1-r1_20260524_114759",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "2560"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 10,
+              "readMaxMs": 10,
+              "runId": "test-v11-2_v17-tps2560_v11rb_r1",
+              "directory": "e2e-results/v17-T2-r7g8xl-tps2560-reboot-test-v11-2-r1_20260524_114728",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "2560"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 10,
+              "readMaxMs": 10,
+              "runId": "test-v11-3_v17-tps2560_v11rb_r1",
+              "directory": "e2e-results/v17-T2-r7g8xl-tps2560-reboot-test-v11-3-r1_20260524_114859",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "2560"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 10,
+              "readMaxMs": 10,
+              "runId": "test-v11-4_v17-tps2560_v11rb_r1",
+              "directory": "e2e-results/v17-T2-r7g8xl-tps2560-reboot-test-v11-4-r1_20260524_114828",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "2560"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 10,
+              "readMaxMs": 0,
+              "runId": "test-v11-5_v17-tps2560_v11rb_r1",
+              "directory": "e2e-results/v17-T2-r7g8xl-tps2560-reboot-test-v11-5-r1_20260524_114759",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "2560"
+            }
+          ],
+          "samples": [
+            10,
+            10,
+            10,
+            10,
+            10
+          ],
+          "readSamples": [
+            10,
+            10,
+            10,
+            10,
+            0
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 10,
+            "max": 10,
+            "mean": 10,
+            "median": 10,
+            "p50": 10,
+            "p75": 10,
+            "p90": 10,
+            "p95": 10,
+            "p99": 10,
+            "q1": 10,
+            "q3": 10,
+            "stdev": 0
+          },
+          "readStats": {
+            "n": 5,
+            "min": 0,
+            "max": 10,
+            "mean": 8,
+            "median": 10,
+            "p50": 10,
+            "p75": 10,
+            "p90": 10,
+            "p95": 10,
+            "p99": 10,
+            "q1": 10,
+            "q3": 10,
+            "stdev": 4
+          }
+        }
+      },
+      "total_measurements": 15
+    },
+    "v17-T3-r7g8xl-tps4000": {
+      "label": "v17-T3-r7g8xl-tps4000",
+      "metadata": {
+        "writer_instance": "r7g.8xlarge",
+        "reader_instance": "r7g.2xlarge",
+        "client_instance": "c6i.8xlarge",
+        "tps_config": "v17-tps4000",
+        "tps": "4000"
+      },
+      "scenarios": {
+        "blue-green": {
+          "scenario": "blue-green",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 3530,
+              "readMaxMs": 3520,
+              "runId": "test-v11-1_v17-tps4000_v11bg_r1",
+              "directory": "e2e-results/v17-T3-r7g8xl-tps4000-blue-green-test-v11-1-r1_20260524_125057",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "4000"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 3690,
+              "readMaxMs": 3690,
+              "runId": "test-v11-2_v17-tps4000_v11bg_r1",
+              "directory": "e2e-results/v17-T3-r7g8xl-tps4000-blue-green-test-v11-2-r1_20260524_124956",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "4000"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 5431,
+              "readMaxMs": 5441,
+              "runId": "test-v11-3_v17-tps4000_v11bg_r1",
+              "directory": "e2e-results/v17-T3-r7g8xl-tps4000-blue-green-test-v11-3-r1_20260524_124857",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "4000"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 3715,
+              "readMaxMs": 3715,
+              "runId": "test-v11-4_v17-tps4000_v11bg_r1",
+              "directory": "e2e-results/v17-T3-r7g8xl-tps4000-blue-green-test-v11-4-r1_20260524_125057",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "4000"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 4530,
+              "readMaxMs": 4530,
+              "runId": "test-v11-5_v17-tps4000_v11bg_r1",
+              "directory": "e2e-results/v17-T3-r7g8xl-tps4000-blue-green-test-v11-5-r1_20260524_125057",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "4000"
+            }
+          ],
+          "samples": [
+            3530,
+            3690,
+            5431,
+            3715,
+            4530
+          ],
+          "readSamples": [
+            3520,
+            3690,
+            5441,
+            3715,
+            4530
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 3530,
+            "max": 5431,
+            "mean": 4179,
+            "median": 3715,
+            "p50": 3715,
+            "p75": 4530,
+            "p90": 5070,
+            "p95": 5250,
+            "p99": 5394,
+            "q1": 3690,
+            "q3": 4530,
+            "stdev": 716
+          },
+          "readStats": {
+            "n": 5,
+            "min": 3520,
+            "max": 5441,
+            "mean": 4179,
+            "median": 3715,
+            "p50": 3715,
+            "p75": 4530,
+            "p90": 5076,
+            "p95": 5258,
+            "p99": 5404,
+            "q1": 3690,
+            "q3": 4530,
+            "stdev": 721
+          }
+        },
+        "failover": {
+          "scenario": "failover",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 15990,
+              "readMaxMs": 15980,
+              "runId": "test-v11-1_v17-tps4000_v11fo_r1",
+              "directory": "e2e-results/v17-T3-r7g8xl-tps4000-failover-test-v11-1-r1_20260524_125407",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "4000"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 12540,
+              "readMaxMs": 12540,
+              "runId": "test-v11-2_v17-tps4000_v11fo_r1",
+              "directory": "e2e-results/v17-T3-r7g8xl-tps4000-failover-test-v11-2-r1_20260524_125303",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "4000"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 11590,
+              "readMaxMs": 11580,
+              "runId": "test-v11-3_v17-tps4000_v11fo_r1",
+              "directory": "e2e-results/v17-T3-r7g8xl-tps4000-failover-test-v11-3-r1_20260524_125204",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "4000"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 8620,
+              "readMaxMs": 8610,
+              "runId": "test-v11-4_v17-tps4000_v11fo_r1",
+              "directory": "e2e-results/v17-T3-r7g8xl-tps4000-failover-test-v11-4-r1_20260524_125406",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "4000"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 10720,
+              "readMaxMs": 10720,
+              "runId": "test-v11-5_v17-tps4000_v11fo_r1",
+              "directory": "e2e-results/v17-T3-r7g8xl-tps4000-failover-test-v11-5-r1_20260524_125406",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "4000"
+            }
+          ],
+          "samples": [
+            15990,
+            12540,
+            11590,
+            8620,
+            10720
+          ],
+          "readSamples": [
+            15980,
+            12540,
+            11580,
+            8610,
+            10720
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 8620,
+            "max": 15990,
+            "mean": 11892,
+            "median": 11590,
+            "p50": 11590,
+            "p75": 12540,
+            "p90": 14610,
+            "p95": 15300,
+            "p99": 15852,
+            "q1": 10720,
+            "q3": 12540,
+            "stdev": 2424
+          },
+          "readStats": {
+            "n": 5,
+            "min": 8610,
+            "max": 15980,
+            "mean": 11886,
+            "median": 11580,
+            "p50": 11580,
+            "p75": 12540,
+            "p90": 14604,
+            "p95": 15292,
+            "p99": 15842,
+            "q1": 10720,
+            "q3": 12540,
+            "stdev": 2423
+          }
+        },
+        "reboot": {
+          "scenario": "reboot",
+          "rounds": [
+            {
+              "cluster": "test-v11-1",
+              "round": 1,
+              "writeMaxMs": 20,
+              "readMaxMs": 10,
+              "runId": "test-v11-1_v17-tps4000_v11rb_r1",
+              "directory": "e2e-results/v17-T3-r7g8xl-tps4000-reboot-test-v11-1-r1_20260524_130416",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "4000"
+            },
+            {
+              "cluster": "test-v11-2",
+              "round": 1,
+              "writeMaxMs": 30,
+              "readMaxMs": 20,
+              "runId": "test-v11-2_v17-tps4000_v11rb_r1",
+              "directory": "e2e-results/v17-T3-r7g8xl-tps4000-reboot-test-v11-2-r1_20260524_130313",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "4000"
+            },
+            {
+              "cluster": "test-v11-3",
+              "round": 1,
+              "writeMaxMs": 10,
+              "readMaxMs": 1,
+              "runId": "test-v11-3_v17-tps4000_v11rb_r1",
+              "directory": "e2e-results/v17-T3-r7g8xl-tps4000-reboot-test-v11-3-r1_20260524_130213",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "4000"
+            },
+            {
+              "cluster": "test-v11-4",
+              "round": 1,
+              "writeMaxMs": 20,
+              "readMaxMs": 20,
+              "runId": "test-v11-4_v17-tps4000_v11rb_r1",
+              "directory": "e2e-results/v17-T3-r7g8xl-tps4000-reboot-test-v11-4-r1_20260524_130415",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "4000"
+            },
+            {
+              "cluster": "test-v11-5",
+              "round": 1,
+              "writeMaxMs": 20,
+              "readMaxMs": 10,
+              "runId": "test-v11-5_v17-tps4000_v11rb_r1",
+              "directory": "e2e-results/v17-T3-r7g8xl-tps4000-reboot-test-v11-5-r1_20260524_130415",
+              "writerInstance": "r7g.8xlarge",
+              "readerInstance": "r7g.2xlarge",
+              "clientInstance": "c6i.8xlarge",
+              "tps": "4000"
+            }
+          ],
+          "samples": [
+            20,
+            30,
+            10,
+            20,
+            20
+          ],
+          "readSamples": [
+            10,
+            20,
+            1,
+            20,
+            10
+          ],
+          "writeStats": {
+            "n": 5,
+            "min": 10,
+            "max": 30,
+            "mean": 20,
+            "median": 20,
+            "p50": 20,
+            "p75": 20,
+            "p90": 26,
+            "p95": 28,
+            "p99": 29,
+            "q1": 20,
+            "q3": 20,
+            "stdev": 6
+          },
+          "readStats": {
+            "n": 5,
+            "min": 1,
+            "max": 20,
+            "mean": 12,
+            "median": 10,
+            "p50": 10,
+            "p75": 20,
+            "p90": 20,
+            "p95": 20,
+            "p99": 20,
+            "q1": 10,
+            "q3": 20,
+            "stdev": 7
+          }
+        }
+      },
+      "total_measurements": 15
+    }
+  },
+  "instance_sweep_at_1280_tps": {
+    "r7g.large": {
+      "run_label": "v17-M1-r7glarge-tps1280",
+      "writer_instance": "r7g.large",
+      "scenarios": {
+        "blue-green": {
+          "n": 5,
+          "min": 4080,
+          "max": 5340,
+          "mean": 4556,
+          "median": 4140,
+          "p50": 4140,
+          "p75": 5130,
+          "p90": 5256,
+          "p95": 5298,
+          "p99": 5331,
+          "q1": 4090,
+          "q3": 5130,
+          "stdev": 558
+        },
+        "failover": {
+          "n": 5,
+          "min": 7620,
+          "max": 11280,
+          "mean": 9574,
+          "median": 9560,
+          "p50": 9560,
+          "p75": 9860,
+          "p90": 10712,
+          "p95": 10996,
+          "p99": 11223,
+          "q1": 9550,
+          "q3": 9860,
+          "stdev": 1167
+        },
+        "reboot": {
+          "n": 5,
+          "min": 120,
+          "max": 200,
+          "mean": 178,
+          "median": 190,
+          "p50": 190,
+          "p75": 190,
+          "p90": 196,
+          "p95": 198,
+          "p99": 199,
+          "q1": 190,
+          "q3": 190,
+          "stdev": 29
+        }
+      }
+    },
+    "r7g.2xlarge": {
+      "run_label": "v17-M2-r7g2xl-tps1280",
+      "writer_instance": "r7g.2xlarge",
+      "scenarios": {
+        "blue-green": {
+          "n": 5,
+          "min": 3560,
+          "max": 4630,
+          "mean": 4050,
+          "median": 3880,
+          "p50": 3880,
+          "p75": 4580,
+          "p90": 4610,
+          "p95": 4620,
+          "p99": 4628,
+          "q1": 3600,
+          "q3": 4580,
+          "stdev": 466
+        },
+        "failover": {
+          "n": 5,
+          "min": 6920,
+          "max": 12000,
+          "mean": 9222,
+          "median": 8720,
+          "p50": 8720,
+          "p75": 11460,
+          "p90": 11784,
+          "p95": 11892,
+          "p99": 11978,
+          "q1": 7010,
+          "q3": 11460,
+          "stdev": 2152
+        },
+        "reboot": {
+          "n": 5,
+          "min": 20,
+          "max": 50,
+          "mean": 34,
+          "median": 30,
+          "p50": 30,
+          "p75": 40,
+          "p90": 46,
+          "p95": 48,
+          "p99": 49,
+          "q1": 30,
+          "q3": 40,
+          "stdev": 10
+        }
+      }
+    },
+    "r7g.4xlarge": {
+      "run_label": "v17-M3-r7g4xl-tps1280",
+      "writer_instance": "r7g.4xlarge",
+      "scenarios": {
+        "blue-green": {
+          "n": 5,
+          "min": 3540,
+          "max": 4420,
+          "mean": 3968,
+          "median": 3772,
+          "p50": 3772,
+          "p75": 4370,
+          "p90": 4400,
+          "p95": 4410,
+          "p99": 4418,
+          "q1": 3740,
+          "q3": 4370,
+          "stdev": 357
+        },
+        "failover": {
+          "n": 5,
+          "min": 6900,
+          "max": 8940,
+          "mean": 8306,
+          "median": 8480,
+          "p50": 8480,
+          "p75": 8840,
+          "p90": 8900,
+          "p95": 8920,
+          "p99": 8936,
+          "q1": 8370,
+          "q3": 8840,
+          "stdev": 734
+        },
+        "reboot": {
+          "n": 5,
+          "min": 30,
+          "max": 40,
+          "mean": 34,
+          "median": 30,
+          "p50": 30,
+          "p75": 40,
+          "p90": 40,
+          "p95": 40,
+          "p99": 40,
+          "q1": 30,
+          "q3": 40,
+          "stdev": 4
+        }
+      }
+    },
+    "r7g.8xlarge": {
+      "run_label": "v17-M4-r7g8xl-tps1280",
+      "writer_instance": "r7g.8xlarge",
+      "scenarios": {
+        "blue-green": {
+          "n": 5,
+          "min": 3270,
+          "max": 4261,
+          "mean": 3692,
+          "median": 3370,
+          "p50": 3370,
+          "p75": 4230,
+          "p90": 4248,
+          "p95": 4254,
+          "p99": 4259,
+          "q1": 3330,
+          "q3": 4230,
+          "stdev": 452
+        },
+        "failover": {
+          "n": 5,
+          "min": 7990,
+          "max": 15240,
+          "mean": 10066,
+          "median": 8140,
+          "p50": 8140,
+          "p75": 10880,
+          "p90": 13496,
+          "p95": 14368,
+          "p99": 15065,
+          "q1": 8080,
+          "q3": 10880,
+          "stdev": 2807
+        },
+        "reboot": {
+          "n": 5,
+          "min": 20,
+          "max": 24,
+          "mean": 20,
+          "median": 20,
+          "p50": 20,
+          "p75": 20,
+          "p90": 22,
+          "p95": 23,
+          "p99": 23,
+          "q1": 20,
+          "q3": 20,
+          "stdev": 1
+        }
+      }
+    }
+  },
+  "tps_sweep_at_r7g8xl": {
+    "1280": {
+      "run_label": "v17-M4-r7g8xl-tps1280",
+      "tps": "1280",
+      "scenarios": {
+        "blue-green": {
+          "n": 5,
+          "min": 3270,
+          "max": 4261,
+          "mean": 3692,
+          "median": 3370,
+          "p50": 3370,
+          "p75": 4230,
+          "p90": 4248,
+          "p95": 4254,
+          "p99": 4259,
+          "q1": 3330,
+          "q3": 4230,
+          "stdev": 452
+        },
+        "failover": {
+          "n": 5,
+          "min": 7990,
+          "max": 15240,
+          "mean": 10066,
+          "median": 8140,
+          "p50": 8140,
+          "p75": 10880,
+          "p90": 13496,
+          "p95": 14368,
+          "p99": 15065,
+          "q1": 8080,
+          "q3": 10880,
+          "stdev": 2807
+        },
+        "reboot": {
+          "n": 5,
+          "min": 20,
+          "max": 24,
+          "mean": 20,
+          "median": 20,
+          "p50": 20,
+          "p75": 20,
+          "p90": 22,
+          "p95": 23,
+          "p99": 23,
+          "q1": 20,
+          "q3": 20,
+          "stdev": 1
+        }
+      }
+    },
+    "2560": {
+      "run_label": "v17-T2-r7g8xl-tps2560",
+      "tps": "2560",
+      "scenarios": {
+        "blue-green": {
+          "n": 5,
+          "min": 3403,
+          "max": 4655,
+          "mean": 3983,
+          "median": 3821,
+          "p50": 3821,
+          "p75": 4490,
+          "p90": 4589,
+          "p95": 4622,
+          "p99": 4648,
+          "q1": 3550,
+          "q3": 4490,
+          "stdev": 501
+        },
+        "failover": {
+          "n": 5,
+          "min": 8240,
+          "max": 16100,
+          "mean": 11004,
+          "median": 11040,
+          "p50": 11040,
+          "p75": 11250,
+          "p90": 14160,
+          "p95": 15130,
+          "p99": 15906,
+          "q1": 8390,
+          "q3": 11250,
+          "stdev": 2846
+        },
+        "reboot": {
+          "n": 5,
+          "min": 10,
+          "max": 10,
+          "mean": 10,
+          "median": 10,
+          "p50": 10,
+          "p75": 10,
+          "p90": 10,
+          "p95": 10,
+          "p99": 10,
+          "q1": 10,
+          "q3": 10,
+          "stdev": 0
+        }
+      }
+    },
+    "4000": {
+      "run_label": "v17-T3-r7g8xl-tps4000",
+      "tps": "4000",
+      "scenarios": {
+        "blue-green": {
+          "n": 5,
+          "min": 3530,
+          "max": 5431,
+          "mean": 4179,
+          "median": 3715,
+          "p50": 3715,
+          "p75": 4530,
+          "p90": 5070,
+          "p95": 5250,
+          "p99": 5394,
+          "q1": 3690,
+          "q3": 4530,
+          "stdev": 716
+        },
+        "failover": {
+          "n": 5,
+          "min": 8620,
+          "max": 15990,
+          "mean": 11892,
+          "median": 11590,
+          "p50": 11590,
+          "p75": 12540,
+          "p90": 14610,
+          "p95": 15300,
+          "p99": 15852,
+          "q1": 10720,
+          "q3": 12540,
+          "stdev": 2424
+        },
+        "reboot": {
+          "n": 5,
+          "min": 10,
+          "max": 30,
+          "mean": 20,
+          "median": 20,
+          "p50": 20,
+          "p75": 20,
+          "p90": 26,
+          "p95": 28,
+          "p99": 29,
+          "q1": 20,
+          "q3": 20,
+          "stdev": 6
+        }
+      }
+    }
+  }
+}

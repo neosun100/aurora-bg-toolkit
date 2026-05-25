@@ -270,7 +270,7 @@ def main():
     print(f"  Wrote CSV: {PCSV}", file=sys.stderr)
 
     # CSV 2: raw measurements (1 row per cluster × scenario, 88 rows)
-    RCSV = REPO_ROOT / "dashboard/data/v16-raw-measurements.csv"
+    RCSV = REPO_ROOT / "dashboard/data/v17-raw-measurements.csv"
     with RCSV.open("w", newline="") as f:
         w = csv.writer(f)
         w.writerow([
