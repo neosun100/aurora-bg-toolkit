@@ -5,12 +5,132 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v17-reboot-deep-dive] - 2026-05-25
+
+> ⭐ **FINAL.** v16 阶段报告的 RB ≈ 0ms 是 10 Hz STATS reporter 的测量盲区，
+> 不是 reboot 真的透明。v17 用 100 Hz STATS reporter（10× 精度）+ FINER
+> wrapper log + 服务端 describe-events 三层证据交叉验证，重测 6 个 run
+> × 5 cluster × 3 scenario = 90 measurements + 1 smoke run。**修正后的真实
+> RB 是 10-200ms 阶梯（按 reader 实例规格）。**
+
+### Why this version exists
+
+After v16 completed, audit of raw logs revealed reboot data was suspiciously
+"too good":
+
+- All 30 reboot measurements reported `writeMaxMs = 0ms`
+- v16 wrapper logs had only 17 non-STATS events (just startup + shutdown)
+- v11-era logs for the SAME scenario had 10,359 wrapper events + 69
+  occurrences of `write_ok=0`
+- Distributed systems can't have 100% transparent reboots — the "0ms"
+  was almost certainly a measurement artifact
+
+v17 was launched to validate or refute v16's reboot conclusions with a
+10× more precise STATS reporter.
+
+### Instrumentation upgrade
+
+| Dimension | v16 | v17 |
+|---|---|---|
+| STATS reporter | 10 Hz (100 ms sampling) | **100 Hz (10 ms sampling)** |
+| Wrapper log | INFO | **FINER** (full plugin events) |
+| Server-side state | none | **describe-db-instances every 5 s** |
+| Measurement precision | ±100 ms | **±10 ms** |
+
+All changes were YAML config changes (`configs/v17-tps{1280,2560,4000}.yaml`
+set `wrapperLoggerLevel: FINER` + `statsReporterHz: 100`). **Java code did
+not need any modifications.**
+
+### Headline results (v17, 100 Hz, 90 matrix measurements + smoke)
+
+| Run | Writer | Reader | TPS | RB p50 | RB max |
+|---|---|---|---|---|---|
+| M1 | r7g.large    | **t3.medium**   | 1280 | **190 ms** | 200 ms |
+| M2 | r7g.2xlarge  | **r7g.large**   | 1280 | **30 ms**  | 50 ms  |
+| M3 | r7g.4xlarge  | **r7g.large**   | 1280 | **30 ms**  | 40 ms  |
+| M4 | r7g.8xlarge  | **r7g.2xlarge** | 1280 | **20 ms**  | 24 ms  |
+| T2 | r7g.8xlarge  | **r7g.2xlarge** | 2560 | **10 ms**  | 10 ms  |
+| **T3** ⭐ | r7g.8xlarge | **r7g.2xlarge** | 4000 | **20 ms** | 30 ms |
+| smoke (1 cluster, no reader) | r7g.large | — | 1280 | **6620 ms** | — |
+
+### Findings that updated production guidance
+
+1. **v16's "RB ≈ 0ms / transparent" was a measurement blind-spot.** Real
+   number is 10-200 ms by reader instance class. Cluster auto-failover
+   mechanism is real but not zero-latency.
+
+2. **Reader instance class is the dominant factor for RB speed.**
+   - t3.medium reader → 190 ms
+   - r7g.large reader → 30 ms (6× faster)
+   - r7g.2xlarge reader → 10-20 ms (HSK production tier)
+   - No reader → degrades to 6.6 s (must NEVER use this topology)
+
+3. **TPS does NOT affect RB.** From 1280 → 2560 → 4000 ops/s on the same
+   r7g.2xlarge reader, RB stays at 10-30 ms.
+
+4. **v17 T3 BG 5/5 success.** v16's cluster-3/5 BG creation failures were
+   occasional control-plane transients, not systemic. Production should
+   still stagger BG switchovers.
+
+### What v17 did NOT change
+
+- v11-final.yaml stays the production recommendation (no client config changes)
+- BG / FO numbers are within ±25% of v16 (no systemic shift)
+- 8X r7g.8xlarge writer is comprehensively the best
+- All v9 / v12 reverse-experiment lessons remain valid
+
+### Production guidance corrections
+
+| Old (v16) | New (v17) |
+|---|---|
+| RB ≈ 0 ms / cluster auto-failover transparent | **RB 中位 ≤ 30ms / 最大 ≤ 50ms** (writer + r7g.2xlarge reader) |
+| reboot 对应用透明 | reboot 走 cluster auto-failover, 应用一次 retry 即可覆盖 |
+| reader 是 nice-to-have | **reader 规格直接决定 RB 速度，r7g.2xlarge+ 是 HSK 推荐底线** |
+| 应用 reboot timeout < 1s | **应用 reboot timeout ≥ 100ms** (生产配置) / **≥ 8s** (无 reader) |
+
+### Wall time + cost
+
+- 7 runs (smoke + M1-M4 + T2 + T3) total wall time: **~24 hours**
+- AWS cost: **~$170**
+- 4 manual rescue cycles to accelerate stuck cdk-destroy phases (~30 min total operator time)
+- Project totals after v17: **377 measurements, ~$370 AWS spend, 7 versions, 10 days**
+
+### Technical details
+
+- Modified `infra/orchestrate-v11.py` to dump RDS server-state JSON per reboot round
+- New scripts: `scripts/v17-extract-matrix.py`, `scripts/v17-check.sh`,
+  `scripts/v17-monitor-heartbeat.sh`, `scripts/v17-auto-rescue.sh`
+- New configs: `configs/v17-tps{1280,2560,4000}.yaml`
+- New launch infrastructure: `infra/launch-matrix-v17.sh`,
+  `infra/cdk/stacks/matrix_runner_stack_v17.py`, `infra/matrix-spec-v17.yaml`
+- New report: `docs/REPORTS/2026-05-23-v17-reboot-deep-dive.md` (314 lines)
+- New evolution doc: `docs/EVOLUTION-v9-to-v17.md` (replaces v9-to-v16)
+- New dashboard: `dashboard/data/v17-matrix.json`,
+  `dashboard/data/v17-only.json`, `dashboard/data/v17-matrix-percentiles.csv`,
+  `dashboard/data/v17-raw-measurements.csv`, `dashboard/assets/dashboard-v17.js`
+- Updated `docs/FINAL-REPORT.md` (570 → 688 lines, RB sections rewritten)
+- Updated `README.md` to add v17 section + correct RB 0ms claims
+
+### Author / acknowledgements
+
+- Author: Neo Sun (jiasunm@amazon.com)
+- Triggering signal: User Wang challenged "reboot 0ms 是不是测量错了？" — the
+  audit confirmed his suspicion was correct
+- v17 reproduced and **vindicated** the v11-era reboot finding (~7s in
+  single-cluster topology) via the smoke run
+
+---
+
 ## [v16-instance-tps-sweep] - 2026-05-22
 
 > ⭐ **STEVEN-GRADE.** Production validation that v11 config holds across
 > instance classes (1X / 2X / 4X / 8X) and TPS tiers (1280 / 2560 / 4000).
 > Headline: **T3 (8X @ 4000 TPS)** is the HashKey production target. v11
 > is confirmed optimal across all 6 runs.
+>
+> ⚠️ **v16 reboot data was later proven a measurement blind-spot.** See
+> the v17-reboot-deep-dive entry above for the corrected numbers. v16's
+> BG / FO findings remain valid (verified by v17 within ±25%).
 
 ### Tested
 

@@ -2,7 +2,7 @@
 
 # Aurora BG Toolkit
 
-**Production-grade reproducible test harness for Aurora MySQL Blue/Green switchover, Failover, and Reboot downtime — full IaC, 5-cluster parallel, ±100ms precision, ~$5 per run.**
+**Production-grade reproducible test harness for Aurora MySQL Blue/Green switchover, Failover, and Reboot downtime — full IaC, 5-cluster parallel, ±10ms precision (v17, 100Hz STATS), ~$5 per run.**
 
 [![CI](https://github.com/neosun100/aurora-bg-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/neosun100/aurora-bg-toolkit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -11,10 +11,11 @@
 [![Aurora MySQL](https://img.shields.io/badge/Aurora%20MySQL-3.10.4-2997ff.svg?logo=amazonaws&logoColor=white)](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraMySQLReleaseNotes/)
 [![JDBC Wrapper](https://img.shields.io/badge/aws--advanced--jdbc--wrapper-4.0.1-30d158.svg)](https://github.com/awslabs/aws-advanced-jdbc-wrapper)
 [![HikariCP](https://img.shields.io/badge/HikariCP-4.0.3-bf5af2.svg)](https://github.com/brettwooldridge/HikariCP)
-[![Tests](https://img.shields.io/badge/measurements-250+-brightgreen.svg)](#optimization-journey)
+[![Tests](https://img.shields.io/badge/measurements-377-brightgreen.svg)](#optimization-journey)
 
 [Quick Start](#-quick-start) ·
 [Optimal Config](#-optimal-config-v11) ·
+[v17 Reboot Deep-Dive](#-v17-reboot-deep-dive-2026-05-24) ·
 [v16 Matrix Sweep](#-v16-matrix-sweep-2026-05-21) ·
 [Lifecycle](#-test-lifecycle--single-run-2h) ·
 [Optimization Journey](#-optimization-journey) ·
@@ -28,15 +29,17 @@
 
 ## 📑 Final Report (start here)
 
-**For HashKey production readiness, the single source of truth is [`docs/FINAL-REPORT.md`](docs/FINAL-REPORT.md)** — 547 lines integrating all v9 → v16 findings into one document:
+**For HashKey production readiness, the single source of truth is [`docs/FINAL-REPORT.md`](docs/FINAL-REPORT.md)** — 688 lines integrating all v9 → v17 findings into one document:
 
 - **TL;DR** — production decision in 5 lines
 - **Core matrix** — instance × TPS × scenario with full percentiles (P50 / P75 / P90 / P95 / P99 / max)
 - **Production parameters** — direct copy-paste config (JDBC + HikariCP + JVM + workload + topology)
-- **Application-layer timeouts** — request timeout ≥ 25s · circuit breaker ≥ 17s · reboot < 1s
+- **Application-layer timeouts** — request timeout ≥ 25s · circuit breaker ≥ 17s · reboot ≥ 100ms
 - **"Do NOT touch" list** — what's already been falsified (v9 + v12 reverse experiments)
-- **Known risks** — including the 8X+4000 TPS BG concurrency limit
-- **Raw data CSVs** — [`v16-matrix-percentiles.csv`](dashboard/data/v16-matrix-percentiles.csv) (19 rows aggregate) + [`v16-raw-measurements.csv`](dashboard/data/v16-raw-measurements.csv) (89 rows raw)
+- **Known risks** — including the 8X+4000 TPS BG concurrency risk (v16 found, v17 didn't reproduce)
+- **Raw data CSVs** — [`v17-matrix-percentiles.csv`](dashboard/data/v17-matrix-percentiles.csv) (18 rows aggregate) + [`v17-raw-measurements.csv`](dashboard/data/v17-raw-measurements.csv) (90 rows raw)
+
+> **🆕 v17 update (2026-05-25)**: v16 阶段报告的 RB ≈ 0ms 是 10 Hz STATS reporter 的测量盲区。v17 用 100 Hz reporter 重测后真实 RB = 10-200ms（按 reader 实例规格阶梯）。**HSK 生产对外口径修正为：RB ≤ 30ms（writer + r7g.2xlarge reader 拓扑）**。详见 [`docs/REPORTS/2026-05-23-v17-reboot-deep-dive.md`](docs/REPORTS/2026-05-23-v17-reboot-deep-dive.md)。
 
 > If you need data alone, the two CSVs above are self-contained and BI-friendly.
 > If you need narrative, the Final Report is the integrated answer.
@@ -269,14 +272,16 @@ Three exploratory paths after v12: ZGC garbage collector, AlwaysPreTouch + JVM t
 
 The "Steven-grade" production validation. 6 runs × 5 clusters × 1 round × 3 scenarios = **88 measurements** across 4 instance classes (1X / 2X / 4X / 8X) and 3 TPS tiers (1280 / 2560 / **4000**) on `r7g.8xlarge` writers.
 
-| Run | Writer | TPS | BG median | FO median | RB median |
+| Run | Writer | TPS | BG median | FO median | RB median (v17 corrected) |
 |---|---|---|---|---|---|
-| M1 — 1X @ 1280 | r7g.large    | 1280 | 4.60 s | 9.30 s | 0 ms |
-| M2 — 2X @ 1280 | r7g.2xlarge  | 1280 | 3.40 s | 10.10 s | 0 ms |
-| M3 — 4X @ 1280 | r7g.4xlarge  | 1280 | 3.90 s | 10.90 s | 0 ms |
-| M4 — 8X @ 1280 | r7g.8xlarge  | 1280 | 3.20 s | 8.10 s | 0 ms |
-| T2 — 8X @ 2560 | r7g.8xlarge  | 2560 | 4.20 s | 9.00 s | 0 ms |
-| **T3 — 8X @ 4000** ⭐ | r7g.8xlarge  | 4000 | 3.40 s | 11.00 s | 0 ms |
+| M1 — 1X @ 1280 | r7g.large    | 1280 | 4.60 s | 9.30 s | **190 ms** ⚠️ |
+| M2 — 2X @ 1280 | r7g.2xlarge  | 1280 | 3.40 s | 10.10 s | **30 ms** |
+| M3 — 4X @ 1280 | r7g.4xlarge  | 1280 | 3.90 s | 10.90 s | **30 ms** |
+| M4 — 8X @ 1280 | r7g.8xlarge  | 1280 | 3.20 s | 8.10 s | **20 ms** |
+| T2 — 8X @ 2560 | r7g.8xlarge  | 2560 | 4.20 s | 9.00 s | **10 ms** |
+| **T3 — 8X @ 4000** ⭐ | r7g.8xlarge  | 4000 | 3.40 s | 11.00 s | **20 ms** |
+
+> **RB column updated 2026-05-25 with v17 100Hz data.** v16 originally reported RB ≈ 0ms across all runs, which v17 deep-dive proved was a measurement blind-spot. See [v17 section below](#-v17-reboot-deep-dive-2026-05-24) for full story.
 
 **Three v16 findings that update production guidance:**
 
@@ -284,23 +289,71 @@ The "Steven-grade" production validation. 6 runs × 5 clusters × 1 round × 3 s
    stable (3.2-4.6 s / 8.1-11.0 s) regardless of writer size. No
    instance-specific tuning needed.
 
-2. **RB ≈ 0 ms in cluster topology.** v16 used the production cluster
-   topology (writer + reader replica) and AWS JDBC wrapper. Reboot writer
-   triggers cluster auto-failover (~1 s), the wrapper transparently follows.
-   Different from v11's "single-instance reboot 7 s" finding, because v11
-   tested a topology without reader replicas. **For HSK production, reboot
-   is effectively transparent.**
+2. **RB depends on reader instance class** (this conclusion was wrong in
+   v16's original 0ms report; v17 corrected to 10-200ms ladder by reader
+   instance class). The cluster topology (writer + reader replica) means
+   reboot triggers cluster auto-failover (~1-2 s); the JDBC wrapper
+   transparently follows. **For HSK production with r7g.2xlarge reader,
+   reboot ≤ 30ms.** With weaker reader (t3.medium) it degrades to ~190ms.
+   With no reader at all, it falls back to ~7 seconds (v11-era behavior).
 
-3. **BG creation is NOT 100% reliable at 8X + 4000 TPS.** T3 cluster-3
-   and cluster-5 BG creation **failed** with `InvalidBlueGreenDeploymentStateFault`
-   under 5-cluster simultaneous + 4000 ops/s sustained load. **Production
-   guidance: schedule BG switchovers at off-peak, one cluster at a time,
-   when on 8X infrastructure at production TPS.**
+3. **BG creation reliability at 8X + 4000 TPS is occasional, not systemic.**
+   v16 T3 had cluster-3 / cluster-5 BG creation **fail** with
+   `InvalidBlueGreenDeploymentStateFault`. v17 retest under same conditions
+   showed 5/5 success, suggesting these failures are RDS control-plane
+   transient under high load. **Production guidance still applies:
+   stagger BG switchovers, one cluster at a time at off-peak hours.**
 
 Wall time: **27 hours autonomous** on AWS (t3.small runner via systemd).
 AWS cost: **~$170**. Operator time: **0** (Bark notifications to phone).
 
-See [`docs/REPORTS/2026-05-21-v16-instance-tps-sweep.md`](docs/REPORTS/2026-05-21-v16-instance-tps-sweep.md) and [`docs/EVOLUTION-v9-to-v16.md`](docs/EVOLUTION-v9-to-v16.md) for full data + per-cluster breakdown.
+See [`docs/REPORTS/2026-05-21-v16-instance-tps-sweep.md`](docs/REPORTS/2026-05-21-v16-instance-tps-sweep.md) for v16 raw data + per-cluster breakdown.
+
+---
+
+### v17 — reboot deep-dive (90 measurements, ~24h autonomous, 2026-05-24) ⭐ FINAL
+
+After v16 completed, audit of the raw logs revealed that all 30 reboot
+measurements reported `writeMaxMs = 0ms` while v11-era logs showed 10,000+
+wrapper events and 69 `write_ok=0` occurrences for the same scenario. This
+was suspicious — distributed systems don't typically have 100% transparent
+reboots. v17 repeated the entire matrix with **100 Hz STATS reporter (10×
+precision)** and uncovered the truth:
+
+| Run | Writer | Reader | TPS | RB p50 | RB max |
+|---|---|---|---|---|---|
+| M1 — 1X @ 1280 | r7g.large    | **t3.medium**   | 1280 | **190 ms** | 200 ms |
+| M2 — 2X @ 1280 | r7g.2xlarge  | **r7g.large**   | 1280 | **30 ms**  | 50 ms  |
+| M3 — 4X @ 1280 | r7g.4xlarge  | **r7g.large**   | 1280 | **30 ms**  | 40 ms  |
+| M4 — 8X @ 1280 | r7g.8xlarge  | **r7g.2xlarge** | 1280 | **20 ms**  | 24 ms  |
+| T2 — 8X @ 2560 | r7g.8xlarge  | **r7g.2xlarge** | 2560 | **10 ms**  | 10 ms  |
+| **T3 — 8X @ 4000** ⭐ | r7g.8xlarge | **r7g.2xlarge** | 4000 | **20 ms** | 30 ms |
+| smoke (1 cluster, no reader) | r7g.large | — | 1280 | **6620 ms** | — |
+
+**Three v17 findings that update production guidance**:
+
+1. **v16's RB ≈ 0ms was a measurement blind-spot, not transparent reboot.**
+   10 Hz STATS reporter (100ms sampling) couldn't catch the real 10-200ms
+   reboot gap. v17 with 100 Hz (10ms sampling) reveals the truth. **HSK
+   production guidance: do NOT advertise "RB ≈ 0ms / transparent"; correct
+   wording is "RB ≤ 30ms" with proper reader topology.**
+
+2. **Reader instance class is the dominant factor for RB speed.** 6× ladder:
+   - t3.medium reader → 190 ms
+   - r7g.large reader → 30 ms
+   - r7g.2xlarge reader → 10-20 ms (HSK production tier)
+   No reader at all → degrades to 6.6 s (production must NEVER use this topology).
+
+3. **TPS does NOT affect RB.** From 1280 → 2560 → 4000 ops/s on the same
+   r7g.2xlarge reader, RB stays at 10-30ms. The cluster auto-failover path
+   is independent of write workload intensity.
+
+Wall time: **24 hours autonomous** on AWS (with 4 manual rescue cycles to
+accelerate stuck cdk-destroy phases).
+AWS cost: **~$170**.
+Total project measurements: **377 across 7 versions**.
+
+See [`docs/REPORTS/2026-05-23-v17-reboot-deep-dive.md`](docs/REPORTS/2026-05-23-v17-reboot-deep-dive.md) for the full v17 story (314 lines: blind-spot analysis, instrumentation upgrade, complete data, methodology reflections).
 
 ---
 
