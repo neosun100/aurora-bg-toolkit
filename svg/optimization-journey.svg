@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1100" font-family="-apple-system,'SF Pro Display',system-ui,sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1300" font-family="-apple-system,'SF Pro Display',system-ui,sans-serif">
 <style>
 .title{font-size:30px;font-weight:700;fill:#f5f5f7}
 .subtitle{font-size:14px;fill:#86868b}
@@ -11,8 +11,8 @@
 <rect width="1400" height="1100" fill="#000"/>
 
 <!-- Title -->
-<text x="60" y="50" class="title">Aurora Downtime Optimization Journey — v9 → v16</text>
-<text x="60" y="74" class="subtitle">7 days · 250+ measurements · v11 emerged as production-optimal · v16 validated at HSK production scale (8X r7g, 4000 TPS)</text>
+<text x="60" y="50" class="title">Aurora Downtime Optimization Journey — v9 → v17</text>
+<text x="60" y="74" class="subtitle">10 days · 377 measurements · v11 emerged as production-optimal · v16 validated at HSK production scale · v17 rebuilt RB measurement (100Hz STATS) and corrected the "0ms blind-spot"</text>
 
 <!-- Timeline header -->
 <text x="60" y="125" class="scenario-label">VERSION</text>
@@ -187,15 +187,45 @@
   <rect x="1010" y="10" width="320" height="100" rx="6" fill="#0d0d0f" stroke="#bf5af2" stroke-width="2"/>
   <text x="1020" y="32" class="metric" fill="#86efac">BG: 3.4s</text>
   <text x="1140" y="32" class="metric" fill="#fdba74">FO: 11.0s</text>
-  <text x="1250" y="32" class="metric" fill="#67e8f9">RB: 0ms</text>
+  <text x="1250" y="32" class="metric" fill="#67e8f9">RB: 0ms ⚠</text>
   <text x="1020" y="55" class="detail" fill="#86efac">T3 (8X @ 4000 TPS) — Steven-grade production target</text>
-  <text x="1020" y="73" class="detail" fill="#d8b4fe">⭐ RB transparent (cluster auto-failover via JDBC wrapper)</text>
+  <text x="1020" y="73" class="detail" fill="#fda4af">⚠ RB 0ms later proven a 10Hz STATS blind-spot (corrected by v17)</text>
   <text x="1020" y="91" class="detail" fill="#fda4af">⚠️ T3 BG: 2/5 cluster creation failed — serialize required</text>
 </g>
 
+<!-- v17 — Reboot deep-dive, 100Hz STATS, the corrected truth -->
+<g transform="translate(0,940)">
+  <rect x="60" y="0" width="200" height="100" rx="10" fill="#0ea5e9"/>
+  <text x="160" y="35" class="version" text-anchor="middle">v17 ⭐</text>
+  <text x="160" y="58" class="label" text-anchor="middle">Reboot deep-dive</text>
+  <text x="160" y="78" class="detail" text-anchor="middle">2026-05-23/24</text>
+  <text x="160" y="92" class="detail" text-anchor="middle">90 measurements (~24h)</text>
+
+  <text x="290" y="20" class="label">Re-validate v16 reboot with 10× precision STATS reporter</text>
+  <text x="290" y="40" class="detail" fill="#86868b">Same 6-run matrix (M1-M4 + T2/T3) but 100 Hz STATS + FINER wrapper logs</text>
+  <text x="290" y="56" class="detail" fill="#86868b">+ smoke run (1 cluster, no reader) to reproduce v11-era 7s degradation</text>
+  <text x="290" y="72" class="detail" fill="#86868b">Server-side describe-events for cross-validation</text>
+  <text x="290" y="88" class="detail" fill="#86868b">Manual rescue cycles to accelerate stuck cdk-destroy phases</text>
+
+  <rect x="650" y="10" width="320" height="100" rx="6" fill="#0ea5e9" opacity="0.3"/>
+  <text x="660" y="32" class="detail" fill="#7dd3fc">YAML-only config changes (Java code unchanged):</text>
+  <text x="660" y="50" class="detail" fill="#7dd3fc">+ wrapperLoggerLevel: INFO → FINER</text>
+  <text x="660" y="68" class="detail" fill="#7dd3fc">+ statsReporterHz: 10 → 100</text>
+  <text x="660" y="86" class="detail" fill="#7dd3fc">+ orchestrate-v11.py dumps RDS server-state every 5s</text>
+
+  <rect x="1010" y="10" width="320" height="100" rx="6" fill="#0d0d0f" stroke="#0ea5e9" stroke-width="2"/>
+  <text x="1020" y="32" class="metric" fill="#86efac">BG: 3.7s</text>
+  <text x="1140" y="32" class="metric" fill="#fdba74">FO: 11.6s</text>
+  <text x="1250" y="32" class="metric" fill="#67e8f9">RB: 20ms ✓</text>
+  <text x="1020" y="55" class="detail" fill="#7dd3fc">T3 (HSK production target) — RB now real, 100Hz precision</text>
+  <text x="1020" y="73" class="detail" fill="#7dd3fc">⭐ RB ladder by reader: t3.medium 190ms / r7g.large 30ms / r7g.2xlarge 20ms</text>
+  <text x="1020" y="91" class="detail" fill="#7dd3fc">smoke (no reader) confirms 6.6s — production must use reader replica</text>
+</g>
+
 <!-- Bottom summary -->
-<rect x="60" y="980" width="1280" height="100" rx="10" fill="#0d0d0f" stroke="#7c3aed" stroke-width="2"/>
-<text x="700" y="1005" font-size="13px" fill="#86868b" text-anchor="middle">FINAL: v11 production-optimal config (DO NOT modify these timeouts) — validated across 1X-8X r7g instances and 1280-4000 TPS</text>
-<text x="700" y="1035" font-size="17px" fill="#bf5af2" text-anchor="middle" font-family="'SF Mono',monospace" font-weight="700">connectTimeout=1000  socketTimeout=3000  failureDetectionTime=6000  pool=[50/80/120]  -Dnetworkaddress.cache.ttl=5</text>
-<text x="700" y="1062" font-size="12px" fill="#86868b" text-anchor="middle">For HSK production target (8X @ 4000 TPS): app request timeout ≥ 25s · circuit breaker ≥ 17s · reboot &lt; 1s (cluster topology required)</text>
+<rect x="60" y="1100" width="1280" height="120" rx="10" fill="#0d0d0f" stroke="#7c3aed" stroke-width="2"/>
+<text x="700" y="1125" font-size="13px" fill="#86868b" text-anchor="middle">FINAL: v11 production-optimal config (DO NOT modify these timeouts) — validated across 1X-8X r7g instances and 1280-4000 TPS</text>
+<text x="700" y="1155" font-size="17px" fill="#bf5af2" text-anchor="middle" font-family="'SF Mono',monospace" font-weight="700">connectTimeout=1000  socketTimeout=3000  failureDetectionTime=6000  pool=[50/80/120]  -Dnetworkaddress.cache.ttl=5</text>
+<text x="700" y="1182" font-size="12px" fill="#86868b" text-anchor="middle">For HSK production target (8X @ 4000 TPS, writer + r7g.2xlarge reader): app request timeout ≥ 25s · circuit breaker ≥ 17s · reboot ≥ 100ms (corrected by v17)</text>
+<text x="700" y="1205" font-size="12px" fill="#7dd3fc" text-anchor="middle">v17 correction: reboot is NOT 0ms — real numbers are 10-200ms by reader instance class. r7g.2xlarge reader is the HSK production floor.</text>
 </svg>
